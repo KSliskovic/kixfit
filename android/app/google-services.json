@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "890621108025",
+    "firebase_url": "https://kixfit-785bf-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "kixfit-785bf",
+    "storage_bucket": "kixfit-785bf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890621108025:android:44b7d036f65191702b52e8",
+        "android_client_info": {
+          "package_name": "com.kixfit.kixfit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5j0W9vjnuaVa2XBCOgEJ0O-YEjJARDgE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
