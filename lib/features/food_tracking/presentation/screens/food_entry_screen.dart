@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -22,10 +25,14 @@ class FoodEntryScreen extends ConsumerStatefulWidget {
 class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
   final TextEditingController _controller = TextEditingController();
   final stt.SpeechToText _speech = stt.SpeechToText();
+  final ImagePicker _picker = ImagePicker();
+  
   bool _isListening = false;
   bool _isAnalyzing = false;
   NutritionInfo? _result;
   String _selectedCategory = 'Ručak';
+  XFile? _imageFile;
+  Uint8List? _imageBytes;
 
   final List<String> _categories = ['Doručak', 'Ručak', 'Večera', 'Snack'];
 
@@ -37,6 +44,31 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
 
   void _initSpeech() async {
     await _speech.initialize();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? selected = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 1000,
+      );
+      
+      if (selected != null) {
+        final bytes = await selected.readAsBytes();
+        setState(() {
+          _imageFile = selected;
+          _imageBytes = bytes;
+          _result = null; // Reset result when new image is picked
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška pri odabiru slike: $e')),
+        );
+      }
+    }
   }
 
   void _listen() async {
@@ -57,7 +89,12 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
   }
 
   Future<void> _analyzeFood() async {
-    if (_controller.text.isEmpty) return;
+    if (_controller.text.isEmpty && _imageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Molimo unesite tekst ili uslikajte obrok.')),
+      );
+      return;
+    }
 
     setState(() {
       _isAnalyzing = true;
@@ -72,6 +109,7 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
         _controller.text, 
         profile: profile,
         category: _selectedCategory,
+        imageBytes: _imageBytes,
       );
       
       setState(() {
@@ -111,6 +149,39 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
               _buildCategorySelector(),
               
               const SizedBox(height: AppSpacing.xl),
+
+              // Image Preview Area
+              if (_imageFile != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.file(
+                          File(_imageFile!.path),
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ).animate().fadeIn().scale(),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: IconButton(
+                          onPressed: () => setState(() {
+                            _imageFile = null;
+                            _imageBytes = null;
+                          }),
+                          icon: const CircleAvatar(
+                            backgroundColor: Colors.black54,
+                            child: Icon(Icons.close, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               
               GlassCard(
                 child: Column(
@@ -119,7 +190,7 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
                       controller: _controller,
                       maxLines: 4,
                       decoration: const InputDecoration(
-                        hintText: 'npr. "Pojeo sam 2 jaja, parče hljeba i avokado. Napravi mi analizu."',
+                        hintText: 'Opiši obrok ili samo uslikaj...',
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -130,6 +201,15 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        IconButton(
+                          onPressed: () => _pickImage(ImageSource.camera),
+                          icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary, size: 28),
+                        ),
+                        IconButton(
+                          onPressed: () => _pickImage(ImageSource.gallery),
+                          icon: const Icon(Icons.photo_library_outlined, color: AppColors.primary, size: 28),
+                        ),
+                        const SizedBox(width: 8),
                         IconButton(
                           onPressed: _listen,
                           icon: Icon(
@@ -147,7 +227,7 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
               const SizedBox(height: AppSpacing.xl),
               
               AppButton(
-                text: 'Analiziraj pomoću AI',
+                text: _isAnalyzing ? 'Analiziram...' : 'Analiziraj pomoću AI',
                 isLoading: _isAnalyzing,
                 onPressed: _analyzeFood,
               ),
