@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../features/auth/domain/entities/user_profile.dart';
 import '../../features/food_tracking/domain/entities/nutrition_info.dart';
@@ -16,7 +17,7 @@ class GeminiAIService implements AIService {
   }
 
   @override
-  Future<NutritionInfo> parseFood(String input, {UserProfile? profile, String? category}) async {
+  Future<NutritionInfo> parseFood(String input, {UserProfile? profile, String? category, Uint8List? imageBytes}) async {
     final profileContext = profile != null 
       ? "User Profile: Age ${profile.age}, Gender ${profile.gender}, Weight ${profile.weight}kg, Height ${profile.height}cm. Medical Conditions: ${profile.medicalConditions}. Goals: ${profile.goals}."
       : "No user profile provided.";
@@ -25,10 +26,11 @@ class GeminiAIService implements AIService {
     You are a professional nutrition coach and personal trainer.
     $profileContext
     
-    The user ate: "$input".
+    The user provided: "${input.isEmpty ? 'Analyze the provided image' : input}".
     This is for the category: "${category ?? 'Ručak'}".
     
-    Analyze this meal and return a JSON object with the following fields:
+    Analyze this meal ${imageBytes != null ? 'from the image and description' : 'from the description'}.
+    Return a JSON object with the following fields:
     - mealName (String): A descriptive name of the meal.
     - ingredients (List<String>): Main ingredients detected.
     - calories (int): Estimated total calories.
@@ -40,12 +42,20 @@ class GeminiAIService implements AIService {
     Return ONLY the raw JSON object. Do not include markdown formatting.
     """;
 
-    final content = [Content.text(prompt)];
+    final List<Content> content = [];
+    if (imageBytes != null) {
+      content.add(Content.multi([
+        TextPart(prompt),
+        DataPart('image/jpeg', imageBytes),
+      ]));
+    } else {
+      content.add(Content.text(prompt));
+    }
+
     final response = await _model.generateContent(content);
     
     if (response.text == null) throw Exception('AI did not return any text.');
 
-    // Clean markdown code blocks if present
     String cleanedText = response.text!.trim();
     if (cleanedText.startsWith('```')) {
       cleanedText = cleanedText.replaceAll(RegExp(r'^```(json)?\n?'), '');
@@ -54,7 +64,6 @@ class GeminiAIService implements AIService {
 
     final jsonMap = jsonDecode(cleanedText) as Map<String, dynamic>;
     
-    // Ručno ubacujemo kategoriju u JSON prije nego što napravimo NutritionInfo objekat
     if (category != null) {
       jsonMap['category'] = category;
     }

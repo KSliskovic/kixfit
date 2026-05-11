@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>KixFit treba pristup kameri kako bi mogao analizirati tvoje obroke sa slika.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>KixFit treba pristup galeriji kako bi mogao analizirati slike hrane koje si već uslikao.</string>
 </dict>
 </plist>
