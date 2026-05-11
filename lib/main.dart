@@ -13,6 +13,7 @@ import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/profile_setup_screen.dart';
 import 'features/auth/presentation/screens/profile_screen.dart';
+import 'features/statistics/presentation/screens/stats_screen.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/data/repositories/profile_repository.dart';
 import 'firebase_options.dart';
@@ -94,6 +95,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
       GoRoute(path: '/food-entry', builder: (context, state) => const FoodEntryScreen()),
       GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
+      GoRoute(path: '/stats', builder: (context, state) => const StatsScreen()),
     ],
   );
 });

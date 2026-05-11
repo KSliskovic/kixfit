@@ -44,4 +44,21 @@ class FirestoreMealRepository implements MealRepository {
       }).toList();
     });
   }
+  
+  @override
+  Future<List<NutritionInfo>> getMealsForRange(String userId, DateTime start, DateTime end) async {
+    final query = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('meals')
+        .where('timestamp', isGreaterThanOrEqualTo: start.toIso8601String())
+        .where('timestamp', isLessThanOrEqualTo: end.toIso8601String())
+        .get();
+        
+    return query.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return NutritionInfo.fromJson(data);
+    }).toList();
+  }
 }

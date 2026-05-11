@@ -141,9 +141,17 @@ class DashboardScreen extends ConsumerWidget {
             Text('Tvoj AI trener je spreman.', style: AppTypography.bodySm),
           ],
         ),
-        IconButton(
-          onPressed: () => context.push('/profile'),
-          icon: const Icon(Icons.person_outline, color: AppColors.primaryLight),
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => context.push('/stats'),
+              icon: const Icon(Icons.bar_chart, color: AppColors.primaryLight),
+            ),
+            IconButton(
+              onPressed: () => context.push('/profile'),
+              icon: const Icon(Icons.person_outline, color: AppColors.primaryLight),
+            ),
+          ],
         ),
       ],
     );

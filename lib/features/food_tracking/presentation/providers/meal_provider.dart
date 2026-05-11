@@ -14,6 +14,12 @@ final todayMealsProvider = StreamProvider.family<List<NutritionInfo>, String>((r
   return ref.watch(mealRepositoryProvider).getTodayMeals(userId);
 });
 
+final weeklyStatsProvider = FutureProvider.family<List<NutritionInfo>, String>((ref, userId) {
+  final now = DateTime.now();
+  final startOfWeek = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 6));
+  return ref.watch(mealRepositoryProvider).getMealsForRange(userId, startOfWeek, now);
+});
+
 
 
 final aiServiceProvider = Provider<AIService>((ref) {
