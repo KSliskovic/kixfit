@@ -47,34 +47,44 @@ final _routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
 
   return GoRouter(
-    initialLocation: '/onboarding',
+    initialLocation: '/dashboard',
     redirect: (context, state) {
-      final isLoggedIn = authState.value != null;
-      final isLoggingIn = state.matchedLocation == '/login' || 
+      final authValue = authState.value;
+      final isLoggedIn = authValue != null;
+      
+      // Definiramo rute koje su dostupne bez prijave
+      final isAuthRoute = state.matchedLocation == '/login' || 
                           state.matchedLocation == '/onboarding' || 
                           state.matchedLocation == '/register';
 
-      if (!isLoggedIn && !isLoggingIn) return '/login';
-      
-      if (isLoggedIn) {
-        final profileAsync = ref.read(userProfileProvider);
-        
-        return profileAsync.when(
-          data: (profile) {
-            if (profile == null && state.matchedLocation != '/profile-setup') {
-              return '/profile-setup';
-            }
-            if (profile != null && isLoggingIn) {
-              return '/dashboard';
-            }
-            return null;
-          },
-          loading: () => null,
-          error: (_, __) => null,
-        );
+      // 1. Ako nije prijavljen i nije na auth ruti -> idi na login
+      if (!isLoggedIn) {
+        if (isAuthRoute) return null;
+        return '/login';
       }
-
-      return null;
+      
+      // 2. Ako je prijavljen, provjeri profil
+      final profileAsync = ref.read(userProfileProvider);
+      
+      return profileAsync.when(
+        data: (profile) {
+          // Ako nema profila, mora ga postaviti (osim ako je već na setupu)
+          if (profile == null) {
+            if (state.matchedLocation == '/profile-setup') return null;
+            return '/profile-setup';
+          }
+          
+          // Ako ima profil i pokušava ići na login/onboarding -> baci ga na dashboard
+          if (isAuthRoute) {
+            return '/dashboard';
+          }
+          
+          return null;
+        },
+        // Dok se profil učitava, ostani gdje jesi (ili dashboard ako smo tek ušli)
+        loading: () => null,
+        error: (_, __) => '/login',
+      );
     },
     routes: [
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
