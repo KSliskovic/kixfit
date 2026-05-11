@@ -1,7 +1,5 @@
 # KixFit App - Verzija v0.2
 
-Odličan posao smo napravili! Aplikacija je sada u stabilnom i funkcionalnom stanju sa implementiranim ključnim AI fitnes funkcijama.
-
 ## 🚀 Šta imamo u v0.2?
 
 ### 1. Inteligentni Profil & Kalkulacija

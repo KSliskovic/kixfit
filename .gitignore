@@ -44,3 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 *.apk
+
+# Secrets
+.env
+*.env
+.env.*
+secrets.dart
+lib/core/config/secrets.dart

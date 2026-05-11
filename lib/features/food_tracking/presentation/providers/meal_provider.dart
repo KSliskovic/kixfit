@@ -4,6 +4,7 @@ import '../../domain/repositories/meal_repository.dart';
 import '../../domain/entities/nutrition_info.dart';
 import '../../../../services/ai/ai_service.dart';
 import '../../../../services/ai/gemini_ai_service.dart';
+import '../../../../core/config/secrets.dart';
 
 final mealRepositoryProvider = Provider<MealRepository>((ref) {
   return FirestoreMealRepository();
@@ -13,6 +14,8 @@ final todayMealsProvider = StreamProvider.family<List<NutritionInfo>, String>((r
   return ref.watch(mealRepositoryProvider).getTodayMeals(userId);
 });
 
+
+
 final aiServiceProvider = Provider<AIService>((ref) {
-  return GeminiAIService('AIzaSyCmZLf3X4w3Gk-d-7WnZUI4bvv42sQpLy0');
+  return GeminiAIService(AppSecrets.geminiApiKey);
 });
