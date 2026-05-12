@@ -61,6 +61,12 @@ class StatsScreen extends ConsumerWidget {
     final chartData = sortedKeys.asMap().entries.map((entry) {
       return FlSpot(entry.key.toDouble(), dailyCalories[entry.value]!);
     }).toList();
+    // Pronalaženje maksimalne vrijednosti za maxY (dodajemo 20% prostora na vrhu)
+    double maxVal = 0;
+    for (var spot in chartData) {
+      if (spot.y > maxVal) maxVal = spot.y;
+    }
+    final maxY = maxVal > 0 ? maxVal * 1.25 : 3000.0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.pagePadding),
@@ -76,6 +82,8 @@ class StatsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: LineChart(
                 LineChartData(
+                  minY: 0,
+                  maxY: maxY,
                   gridData: const FlGridData(show: false),
                   titlesData: FlTitlesData(
                     leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -84,6 +92,8 @@ class StatsScreen extends ConsumerWidget {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
+                        reservedSize: 30,
+                        interval: 1,
                         getTitlesWidget: (value, meta) {
                           final index = value.toInt();
                           if (index < 0 || index >= sortedKeys.length) return const SizedBox();
@@ -97,6 +107,19 @@ class StatsScreen extends ConsumerWidget {
                           );
                         },
                       ),
+                    ),
+                  ),
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (_) => AppColors.backgroundElevated,
+                      getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                        return touchedBarSpots.map((barSpot) {
+                          return LineTooltipItem(
+                            '${barSpot.y.toInt()} kcal',
+                            AppTypography.label.copyWith(color: Colors.white),
+                          );
+                        }).toList();
+                      },
                     ),
                   ),
                   borderData: FlBorderData(show: false),

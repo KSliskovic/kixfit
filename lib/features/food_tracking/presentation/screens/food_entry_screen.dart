@@ -150,6 +150,10 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
               
               const SizedBox(height: AppSpacing.xl),
 
+              _buildRecentMealsSection(),
+              
+              const SizedBox(height: AppSpacing.xl),
+
               // Image Preview Area
               if (_imageFile != null)
                 Padding(
@@ -341,6 +345,74 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
                 },
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentMealsSection() {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) return const SizedBox.shrink();
+
+    final recentMealsAsync = ref.watch(recentMealsProvider(user.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Često korištena jela', style: AppTypography.label.copyWith(color: AppColors.primaryLight)),
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          height: 100,
+          child: recentMealsAsync.when(
+            data: (meals) {
+              if (meals.isEmpty) {
+                return Center(
+                  child: Text('Još nemaš povijest jela', style: AppTypography.caption),
+                );
+              }
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: meals.length,
+                itemBuilder: (context, index) {
+                  final meal = meals[index];
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _result = meal;
+                        _controller.text = meal.mealName;
+                      });
+                    },
+                    child: Container(
+                      width: 140,
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundElevated,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.glassStroke),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            meal.mealName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.label,
+                          ),
+                          const SizedBox(height: 4),
+                          Text('${meal.calories} kcal', style: AppTypography.caption.copyWith(color: AppColors.primary)),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => const SizedBox.shrink(),
           ),
         ),
       ],

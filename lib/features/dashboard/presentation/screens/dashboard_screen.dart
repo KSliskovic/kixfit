@@ -11,6 +11,7 @@ import '../../../auth/data/repositories/profile_repository.dart';
 import '../../../auth/domain/entities/user_profile.dart';
 import '../../../../features/food_tracking/presentation/providers/meal_provider.dart';
 import '../../../../features/food_tracking/domain/entities/nutrition_info.dart';
+import '../../../../features/water_tracking/presentation/providers/water_provider.dart';
 import '../widgets/macro_ring.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -88,6 +89,12 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           
           _buildMacroSection(totalCalories, targetCals, totalProtein, totalCarbs, totalFat),
+          const SizedBox(height: AppSpacing.md),
+          
+          _buildAIRecommendationButton(context, totalCalories, totalProtein, totalCarbs, totalFat),
+          const SizedBox(height: AppSpacing.xl),
+          
+          _buildWaterSection(context, ref, profile, userId),
           const SizedBox(height: AppSpacing.xl),
           
           Text('Današnji obroci', style: AppTypography.h3),
@@ -199,6 +206,54 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildAIRecommendationButton(BuildContext context, int calories, double protein, double carbs, double fat) {
+    return GestureDetector(
+      onTap: () => context.push('/recommendations', extra: {
+        'calories': calories,
+        'protein': protein,
+        'carbs': carbs,
+        'fat': fat,
+      }),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withOpacity(0.8),
+              AppColors.secondary.withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            Text(
+              'Što da pojedem sljedeće?',
+              style: AppTypography.label.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMacroSection(int total, int target, double p, double c, double f) {
     return GlassCard(
       child: Column(
@@ -276,6 +331,165 @@ class DashboardScreen extends ConsumerWidget {
             icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
             onPressed: () => _confirmDelete(context, ref, userId, meal),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterSection(BuildContext context, WidgetRef ref, UserProfile? profile, String userId) {
+    final waterAsync = ref.watch(todayWaterProvider(userId));
+    final double weight = profile?.weight.toDouble() ?? 80.0;
+    final double targetWater = (weight * 0.033); // Litara po kg
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Hidratacija', style: AppTypography.h3),
+        const SizedBox(height: AppSpacing.md),
+        GestureDetector(
+          onLongPress: () => _confirmResetWater(context, ref, userId),
+          child: GlassCard(
+            child: waterAsync.when(
+              data: (amount) => Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${amount.toStringAsFixed(1)} / ${targetWater.toStringAsFixed(1)} L',
+                          style: AppTypography.h3.copyWith(color: AppColors.primaryLight),
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: (amount / targetWater).clamp(0, 1),
+                            minHeight: 12,
+                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          amount >= targetWater ? 'Odlično! Hidriran si.' : 'Još malo do cilja!',
+                          style: AppTypography.caption,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.lg),
+                  Column(
+                    children: [
+                      _buildWaterButton(ref, userId, 0.25, Icons.local_drink, '0.25L'),
+                      const SizedBox(height: 12),
+                      _buildWaterButton(ref, userId, 1.0, Icons.water_drop, '1.0L'),
+                      const SizedBox(height: 12),
+                      _buildCustomWaterButton(context, ref, userId),
+                    ],
+                  ),
+                ],
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Text('Greška: $err'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomWaterButton(BuildContext context, WidgetRef ref, String userId) {
+    return GestureDetector(
+      onTap: () => _showCustomWaterDialog(context, ref, userId),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+            ),
+            child: const Icon(Icons.add, color: AppColors.secondary, size: 24),
+          ),
+          const SizedBox(height: 4),
+          Text('Custom', style: AppTypography.caption.copyWith(fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
+  void _showCustomWaterDialog(BuildContext context, WidgetRef ref, String userId) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundCard,
+        title: Text('Custom unos vode', style: AppTypography.h3),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            hintText: 'Unesi litre (npr. 0.5)',
+            suffixText: 'L',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+          ElevatedButton(
+            onPressed: () {
+              final amount = double.tryParse(controller.text);
+              if (amount != null && amount > 0) {
+                ref.read(waterRepositoryProvider).updateWater(userId, amount);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Dodaj'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmResetWater(BuildContext context, WidgetRef ref, String userId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundCard,
+        title: Text('Resetiranje vode', style: AppTypography.h3),
+        content: const Text('Želiš li poništiti sav današnji unos vode?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Ne')),
+          TextButton(
+            onPressed: () {
+              ref.read(waterRepositoryProvider).resetWater(userId);
+              Navigator.pop(context);
+            },
+            child: const Text('Da, resetiraj', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterButton(WidgetRef ref, String userId, double amount, IconData icon, String label) {
+    return GestureDetector(
+      onTap: () => ref.read(waterRepositoryProvider).updateWater(userId, amount),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            ),
+            child: Icon(icon, color: AppColors.primaryLight, size: 24),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: AppTypography.caption.copyWith(fontSize: 10)),
         ],
       ),
     );

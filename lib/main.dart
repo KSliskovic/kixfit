@@ -13,6 +13,7 @@ import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/profile_setup_screen.dart';
 import 'features/auth/presentation/screens/profile_screen.dart';
+import 'features/food_tracking/presentation/screens/recommendation_screen.dart';
 import 'features/statistics/presentation/screens/stats_screen.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/data/repositories/profile_repository.dart';
@@ -96,6 +97,18 @@ final _routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/food-entry', builder: (context, state) => const FoodEntryScreen()),
       GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
       GoRoute(path: '/stats', builder: (context, state) => const StatsScreen()),
+      GoRoute(
+        path: '/recommendations',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return RecommendationScreen(
+            currentCalories: extra['calories'] as int,
+            currentProtein: extra['protein'] as double,
+            currentCarbs: extra['carbs'] as double,
+            currentFat: extra['fat'] as double,
+          );
+        },
+      ),
     ],
   );
 });

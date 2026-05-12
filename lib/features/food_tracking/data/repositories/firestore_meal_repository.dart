@@ -61,4 +61,27 @@ class FirestoreMealRepository implements MealRepository {
       return NutritionInfo.fromJson(data);
     }).toList();
   }
+
+  @override
+  Future<List<NutritionInfo>> getRecentMeals(String userId, {int limit = 20}) async {
+    final query = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('meals')
+        .orderBy('timestamp', descending: true)
+        .limit(100) // Dohvatimo više pa ćemo profiltrirati unikatne
+        .get();
+
+    final Map<String, NutritionInfo> uniqueMeals = {};
+    
+    for (var doc in query.docs) {
+      final meal = NutritionInfo.fromJson({...doc.data(), 'id': doc.id});
+      if (!uniqueMeals.containsKey(meal.mealName.toLowerCase().trim())) {
+        uniqueMeals[meal.mealName.toLowerCase().trim()] = meal;
+      }
+      if (uniqueMeals.length >= limit) break;
+    }
+
+    return uniqueMeals.values.toList();
+  }
 }

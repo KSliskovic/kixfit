@@ -20,6 +20,10 @@ final weeklyStatsProvider = FutureProvider.family<List<NutritionInfo>, String>((
   return ref.watch(mealRepositoryProvider).getMealsForRange(userId, startOfWeek, now);
 });
 
+final recentMealsProvider = FutureProvider.family<List<NutritionInfo>, String>((ref, userId) {
+  return ref.watch(mealRepositoryProvider).getRecentMeals(userId);
+});
+
 
 
 final aiServiceProvider = Provider<AIService>((ref) {

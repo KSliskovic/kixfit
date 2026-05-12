@@ -5,4 +5,5 @@ abstract class MealRepository {
   Future<void> deleteMeal(String userId, String mealId);
   Stream<List<NutritionInfo>> getTodayMeals(String userId);
   Future<List<NutritionInfo>> getMealsForRange(String userId, DateTime start, DateTime end);
+  Future<List<NutritionInfo>> getRecentMeals(String userId, {int limit = 20});
 }
