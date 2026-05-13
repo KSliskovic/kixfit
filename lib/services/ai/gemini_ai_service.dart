@@ -155,4 +155,40 @@ class GeminiAIService implements AIService {
     
     return NutritionInfo.fromJson(jsonMap);
   }
+
+  Future<List<Map<String, dynamic>>> searchRestaurants(String city, String category) async {
+    final prompt = """
+    Ponašaj se kao lokalni vodič za zdravu prehranu. 
+    Pronađi 5 popularnih restorana u gradu $city koji spadaju u kategoriju: $category.
+    Fokusiraj se na mjesta koja su "Fit-friendly", imaju nutritivne podatke ili su poznata po zdravoj hrani (npr. bez glutena, vegan, high protein).
+    
+    Vrati listu u JSON formatu s poljima:
+    - name (String)
+    - address (String)
+    - rating (double, npr. 4.5)
+    - description (String, kratko na hrvatskom zašto je dobro za fitness)
+    - tags (List<String>, npr. ["Bez glutena", "Vegan", "Fit"])
+    - websiteUrl (String, link na web ili Google Maps)
+    
+    Vrati SAMO sirovi JSON.
+    """;
+
+    try {
+      final response = await _model.generateContent([Content.text(prompt)]);
+      final text = response.text;
+      if (text == null) return [];
+
+      String cleanedText = text.trim();
+      if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replaceAll(RegExp(r'^```(json)?\n?'), '');
+        cleanedText = cleanedText.replaceAll(RegExp(r'\n?```$'), '');
+      }
+
+      final List<dynamic> data = jsonDecode(cleanedText);
+      return data.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('Error searching restaurants: $e');
+      return [];
+    }
+  }
 }

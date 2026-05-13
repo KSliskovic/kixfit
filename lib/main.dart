@@ -15,6 +15,7 @@ import 'features/auth/presentation/screens/profile_setup_screen.dart';
 import 'features/auth/presentation/screens/profile_screen.dart';
 import 'features/food_tracking/presentation/screens/recommendation_screen.dart';
 import 'features/statistics/presentation/screens/stats_screen.dart';
+import 'features/restaurants/presentation/screens/restaurant_search_screen.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/data/repositories/profile_repository.dart';
 import 'firebase_options.dart';
@@ -97,6 +98,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/food-entry', builder: (context, state) => const FoodEntryScreen()),
       GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
       GoRoute(path: '/stats', builder: (context, state) => const StatsScreen()),
+      GoRoute(path: '/restaurants', builder: (context, state) => const RestaurantSearchScreen()),
       GoRoute(
         path: '/recommendations',
         builder: (context, state) {

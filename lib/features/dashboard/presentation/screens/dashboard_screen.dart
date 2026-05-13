@@ -292,6 +292,11 @@ class DashboardScreen extends ConsumerWidget {
         Row(
           children: [
             IconButton(
+              onPressed: () => context.push('/restaurants'),
+              icon: const Icon(Icons.restaurant_menu, color: AppColors.primaryLight),
+              tooltip: 'Pronađi fit restorane',
+            ),
+            IconButton(
               onPressed: () => context.push('/stats'),
               icon: const Icon(Icons.bar_chart, color: AppColors.primaryLight),
             ),
