@@ -57,8 +57,8 @@ class _RestaurantSearchScreenState extends ConsumerState<RestaurantSearchScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppColors.background,
-              AppColors.background.withBlue(40),
+              AppColors.backgroundDeep,
+              AppColors.backgroundDeep.withBlue(40),
             ],
           ),
         ),

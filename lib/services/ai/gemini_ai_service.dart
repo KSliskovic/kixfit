@@ -1,10 +1,17 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../features/auth/domain/entities/user_profile.dart';
 import '../../features/food_tracking/domain/entities/nutrition_info.dart';
 import '../../features/food_tracking/domain/entities/meal_recommendation.dart';
 import 'ai_service.dart';
+import '../../core/config/secrets.dart';
+
+final geminiAIServiceProvider = Provider<GeminiAIService>((ref) {
+  return GeminiAIService(AppSecrets.geminiApiKey);
+});
 
 class GeminiAIService implements AIService {
   final String _apiKey;
