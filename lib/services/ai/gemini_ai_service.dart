@@ -39,8 +39,17 @@ class GeminiAIService implements AIService {
     - Carbs: ${currentCarbs.toInt()}g
     - Fat: ${currentFat.toInt()}g
     
-    Based on what's missing to hit their daily targets, suggest exactly 3 meal variations.
-    Make the variations diverse:
+    TASK: Suggest exactly 3 meal variations to help hit daily targets.
+    
+    REFERENCE NUTRITION (Standard per 100g):
+    - Chicken/Turkey (Cooked): ~23-25g Protein
+    - Beef (Lean): ~26g Protein
+    - White Rice (Cooked): ~28g Carbs
+    - Potato (Boiled): ~17g Carbs
+    - Pasta (Cooked): ~25g Carbs
+    - Eggs: ~6g Protein per egg
+    
+    Based on what's missing to hit their daily targets, suggest:
     1. A quick snack or light meal.
     2. A protein-dense meal.
     3. A balanced meal fitting the remaining macros.
@@ -48,10 +57,10 @@ class GeminiAIService implements AIService {
     Return a JSON array of objects with these fields:
     - title (String): Short name of the meal.
     - description (String): Brief explanation why this is good now.
-    - calories (int): Estimated calories.
-    - protein (double): Grams of protein.
-    - carbs (double): Grams of carbs.
-    - fat (double): Grams of fat.
+    - calories (int): Realistic estimated calories.
+    - protein (double): Realistic grams of protein (avoid overestimation).
+    - carbs (double): Realistic grams of carbs.
+    - fat (double): Realistic grams of fat.
     - type (String): Type of meal (e.g., "Brzi snack", "Proteinski fokus").
     
     Return ONLY the raw JSON array.
@@ -78,23 +87,44 @@ class GeminiAIService implements AIService {
       : "No user profile provided.";
 
     final prompt = """
-    You are a professional nutrition coach and personal trainer.
+    You are a highly accurate professional nutrition coach and personal trainer.
     $profileContext
     
-    The user provided: "${input.isEmpty ? 'Analyze the provided image' : input}".
-    This is for the category: "${category ?? 'Ručak'}".
+    TASK: Analyze the food input and provide PRECISE macronutrient estimations. 
+    It is CRITICAL not to overestimate protein or calories.
     
-    Analyze this meal ${imageBytes != null ? 'from the image and description' : 'from the description'}.
-    Return a JSON object with the following fields:
-    - mealName (String): A descriptive name of the meal.
-    - ingredients (List<String>): Main ingredients detected.
+    REFERENCE DATA (Standard values per 100g):
+    - Chicken/Turkey Breast (Grilled): ~23-25g Protein, 1-3g Fat, 110-130 kcal.
+    - Beef Steak (Lean): ~25-27g Protein, 5-10g Fat, 150-200 kcal.
+    - White Rice (Cooked): ~28g Carbs, 2g Protein, 130 kcal.
+    - Eggs (1 large): 6g Protein, 5g Fat, 70 kcal.
+    - Whey Protein (1 scoop/30g): 22-25g Protein.
+    
+    User Input: "${input.isEmpty ? 'Analyze the provided image' : input}".
+    Category: "${category ?? 'Ručak'}".
+    
+    INSTRUCTIONS:
+    1. If the user says "100g chicken", protein MUST be ~23-25g, NOT more.
+    2. If weight is not specified, assume standard portions: 150g for meat, 200g for cooked grains, 15ml for oil.
+    3. Analyze ${imageBytes != null ? 'the image and description' : 'the description'} carefully.
+    4. Account for preparation methods (fried vs grilled).
+    
+    Return a JSON object with:
+    - mealName (String): Descriptive name.
+    - ingredients (List<String>): Detect main ingredients and estimated weights.
     - calories (int): Estimated total calories.
-    - protein (double): Estimated protein in grams.
-    - carbs (double): Estimated carbohydrates in grams.
-    - fat (double): Estimated fat in grams.
-    - confidenceNote (String): A short, personalized note or advice based on the user's profile and medical conditions.
+    - protein (double): Estimated protein (be realistic!).
+    - carbs (double): Estimated carbohydrates.
+    - fat (double): Estimated fat.
+    - sugar (double): Estimated sugar in grams.
+    - fiber (double): Estimated fiber in grams.
+    - sodium (double): Estimated sodium in MILLIGRAMS (mg).
+    - saturatedFat (double): Estimated saturated fat in grams.
+    - cholesterol (double): Estimated cholesterol in MILLIGRAMS (mg).
+    - transFat (double): Estimated trans fat in grams.
+    - confidenceNote (String): Explain your estimation logic.
     
-    Return ONLY the raw JSON object. Do not include markdown formatting.
+    Return ONLY raw JSON.
     """;
 
     final List<Content> content = [];

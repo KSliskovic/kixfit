@@ -9,6 +9,13 @@ class UserProfile {
   final String goals;
   final int dailyCaloriesTarget;
 
+  double get sugarTarget => (dailyCaloriesTarget * 0.10) / 4; // Max 10% kalorija
+  double get fiberTarget => (dailyCaloriesTarget / 1000) * 14; // 14g na 1000 kcal
+  double get sodiumTarget => 2300.0; // Standardni limit u mg
+  double get saturatedFatTarget => (dailyCaloriesTarget * 0.10) / 9; // Max 10% kalorija
+  double get cholesterolTarget => 300.0; // Standardni limit u mg
+  double get transFatTarget => 0.0; // Idealno 0
+
   UserProfile({
     required this.id,
     required this.displayName,

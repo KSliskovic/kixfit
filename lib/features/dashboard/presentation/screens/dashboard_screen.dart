@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/data/repositories/profile_repository.dart';
 import '../../../auth/domain/entities/user_profile.dart';
@@ -51,6 +52,12 @@ class DashboardScreen extends ConsumerWidget {
     double totalProtein = 0;
     double totalCarbs = 0;
     double totalFat = 0;
+    double totalSugar = 0;
+    double totalFiber = 0;
+    double totalSodium = 0;
+    double totalSaturatedFat = 0;
+    double totalCholesterol = 0;
+    double totalTransFat = 0;
 
     final Map<String, List<NutritionInfo>> groupedMeals = {
       'Doručak': [],
@@ -64,6 +71,12 @@ class DashboardScreen extends ConsumerWidget {
       totalProtein += meal.protein;
       totalCarbs += meal.carbs;
       totalFat += meal.fat;
+      totalSugar += meal.sugar;
+      totalFiber += meal.fiber;
+      totalSodium += meal.sodium;
+      totalSaturatedFat += meal.saturatedFat;
+      totalCholesterol += meal.cholesterol;
+      totalTransFat += meal.transFat;
       
       if (groupedMeals.containsKey(meal.category)) {
         groupedMeals[meal.category]!.add(meal);
@@ -88,7 +101,16 @@ class DashboardScreen extends ConsumerWidget {
           _buildCoachCard(profile, meals, totalCalories, targetCals),
           const SizedBox(height: AppSpacing.xl),
           
-          _buildMacroSection(totalCalories, targetCals, totalProtein, totalCarbs, totalFat),
+          GestureDetector(
+            onLongPress: () => _showDetailedMacros(
+              context, 
+              profile,
+              totalProtein, totalCarbs, totalFat, 
+              totalSugar, totalFiber, totalSodium, totalSaturatedFat,
+              totalCholesterol, totalTransFat,
+            ),
+            child: _buildMacroSection(totalCalories, targetCals, totalProtein, totalCarbs, totalFat),
+          ),
           const SizedBox(height: AppSpacing.md),
           
           _buildAIRecommendationButton(context, totalCalories, totalProtein, totalCarbs, totalFat),
@@ -106,6 +128,125 @@ class DashboardScreen extends ConsumerWidget {
           _buildCategorySection(context, ref, userId, 'Snack', groupedMeals['Snack']!),
           
           const SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
+
+  void _showDetailedMacros(
+    BuildContext context, 
+    UserProfile? profile,
+    double p, double c, double f, 
+    double s, double fiber, double sod, double sf,
+    double chol, double trans,
+  ) {
+    // Ako profil nije učitan, koristimo defaultne vrijednosti
+    final sugarLimit = profile?.sugarTarget ?? 50.0;
+    final fiberTarget = profile?.fiberTarget ?? 30.0;
+    final sodiumLimit = profile?.sodiumTarget ?? 2300.0;
+    final satFatLimit = profile?.saturatedFatTarget ?? 22.0;
+    final cholLimit = profile?.cholesterolTarget ?? 300.0;
+    final transLimit = profile?.transFatTarget ?? 0.0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.backgroundCard,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(AppSpacing.pagePadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4, 
+                  decoration: BoxDecoration(color: AppColors.glassStroke, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text('Detaljni nutritivni status', style: AppTypography.h3),
+              Text('Ciljevi izračunati prema tvom profilu', style: AppTypography.caption),
+              const SizedBox(height: AppSpacing.xl),
+              
+              _buildDetailRow('Proteini', '${p.toInt()}g', AppColors.macroProtein),
+              _buildDetailRow('Ugljikohidrati', '${c.toInt()}g', AppColors.macroCarbs),
+              _buildDetailRow('Masti', '${f.toInt()}g', AppColors.macroFat),
+              const Divider(color: AppColors.glassStroke, height: 32),
+              
+              _buildDetailRow(
+                'Šećeri', 
+                '${s.toInt()}g / ${sugarLimit.toInt()}g', 
+                s > sugarLimit ? AppColors.error : Colors.orange,
+                subtitle: s > sugarLimit ? 'Pazi, previše šećera!' : 'U granicama normale',
+              ),
+              _buildDetailRow(
+                'Vlakna', 
+                '${fiber.toInt()}g / ${fiberTarget.toInt()}g', 
+                fiber >= fiberTarget ? AppColors.success : Colors.green,
+                subtitle: fiber >= fiberTarget ? 'Odličan unos vlakana!' : 'Pokušaj unijeti više povrća',
+              ),
+              _buildDetailRow(
+                'Zasićene masti', 
+                '${sf.toInt()}g / ${satFatLimit.toInt()}g', 
+                sf > satFatLimit ? AppColors.error : Colors.redAccent,
+                subtitle: sf > satFatLimit ? 'Smanji unos masnog mesa/sira' : 'U granicama normale',
+              ),
+              _buildDetailRow(
+                'Natrij', 
+                '${sod.toInt()}mg / ${sodiumLimit.toInt()}mg', 
+                sod > sodiumLimit ? AppColors.error : Colors.blueGrey,
+                subtitle: sod > sodiumLimit ? 'Pazi na sol!' : 'U granicama normale',
+              ),
+              _buildDetailRow(
+                'Kolesterol', 
+                '${chol.toInt()}mg / ${cholLimit.toInt()}mg', 
+                chol > cholLimit ? AppColors.error : Colors.brown,
+                subtitle: chol > cholLimit ? 'Pazi na životinjske masnoće' : 'U granicama normale',
+              ),
+              _buildDetailRow(
+                'Trans-masti', 
+                '${trans.toInt()}g', 
+                trans > transLimit ? AppColors.error : AppColors.success,
+                subtitle: trans > transLimit ? 'Izbjegavaj prženu/procesiranu hranu!' : 'Izvrsno, nema loših masti',
+              ),
+              
+              const SizedBox(height: AppSpacing.xxl),
+              AppButton(text: 'Zatvori', onPressed: () => Navigator.pop(context)),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, Color color, {String? subtitle}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 12),
+              Text(label, style: AppTypography.body),
+              const Spacer(),
+              Text(value, style: AppTypography.labelLg.copyWith(color: color)),
+            ],
+          ),
+          if (subtitle != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 24.0, top: 4),
+              child: Text(subtitle, style: AppTypography.caption.copyWith(color: color.withOpacity(0.7))),
+            ),
         ],
       ),
     );
@@ -255,6 +396,9 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildMacroSection(int total, int target, double p, double c, double f) {
+    final remaining = target - total;
+    final isExceeded = remaining < 0;
+
     return GlassCard(
       child: Column(
         children: [
@@ -262,17 +406,17 @@ class DashboardScreen extends ConsumerWidget {
             size: 150,
             strokeWidth: 12,
             progress: total / target,
-            color: AppColors.primary,
-            label: 'kcal preostalo',
-            value: '${(target - total).clamp(0, target)}',
+            color: isExceeded ? AppColors.error : AppColors.primary,
+            label: isExceeded ? 'kcal premašeno' : 'kcal preostalo',
+            value: isExceeded ? '$remaining' : '$remaining',
           ),
           const SizedBox(height: AppSpacing.xl),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSmallMacro('Protein', p, 150, AppColors.macroProtein, Icons.fitness_center),
-              _buildSmallMacro('Ugljik.', c, 250, AppColors.macroCarbs, Icons.bolt),
-              _buildSmallMacro('Masti', f, 70, AppColors.macroFat, Icons.water_drop),
+              _buildSmallMacro('Protein', p, 150, p > 150 ? AppColors.error : AppColors.macroProtein, Icons.fitness_center),
+              _buildSmallMacro('Ugljik.', c, 250, c > 250 ? AppColors.error : AppColors.macroCarbs, Icons.bolt),
+              _buildSmallMacro('Masti', f, 70, f > 70 ? AppColors.error : AppColors.macroFat, Icons.water_drop),
             ],
           ),
         ],

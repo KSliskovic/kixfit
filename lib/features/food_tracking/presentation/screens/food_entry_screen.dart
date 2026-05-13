@@ -298,16 +298,35 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(info.mealName, style: AppTypography.h4),
+                    child: _buildEditableText(
+                      info.mealName, 
+                      AppTypography.h4,
+                      (val) => setState(() => _result = _result!.copyWith(mealName: val)),
+                    ),
                   ),
-                  Text('${info.calories} kcal', style: AppTypography.h4.copyWith(color: AppColors.primary)),
+                  _buildEditableNumber(
+                    info.calories.toDouble(), 
+                    'kcal',
+                    AppTypography.h4.copyWith(color: AppColors.primary),
+                    (val) => setState(() => _result = _result!.copyWith(calories: val.toInt())),
+                  ),
                 ],
               ),
               const Divider(height: AppSpacing.xl, color: AppColors.glassStroke),
               
-              _buildMacroRow('Protein', info.protein, AppColors.macroProtein),
-              _buildMacroRow('Ugljikohidrati', info.carbs, AppColors.macroCarbs),
-              _buildMacroRow('Masti', info.fat, AppColors.macroFat),
+              _buildMacroRow('Protein', info.protein, AppColors.macroProtein, (val) => setState(() => _result = _result!.copyWith(protein: val))),
+              _buildMacroRow('Ugljikohidrati', info.carbs, AppColors.macroCarbs, (val) => setState(() => _result = _result!.copyWith(carbs: val))),
+              _buildMacroRow('Masti', info.fat, AppColors.macroFat, (val) => setState(() => _result = _result!.copyWith(fat: val))),
+              
+              const SizedBox(height: AppSpacing.md),
+              Text('DETALJI (Mikronutrijenti)', style: AppTypography.label.copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: AppSpacing.sm),
+              _buildMacroRow('Šećeri', info.sugar, Colors.orange, (val) => setState(() => _result = _result!.copyWith(sugar: val))),
+              _buildMacroRow('Vlakna', info.fiber, Colors.green, (val) => setState(() => _result = _result!.copyWith(fiber: val))),
+              _buildMacroRow('Zasićene masti', info.saturatedFat, Colors.redAccent, (val) => setState(() => _result = _result!.copyWith(saturatedFat: val))),
+              _buildMacroRow('Natrij (mg)', info.sodium, Colors.blueGrey, (val) => setState(() => _result = _result!.copyWith(sodium: val))),
+              _buildMacroRow('Kolesterol (mg)', info.cholesterol, Colors.brown, (val) => setState(() => _result = _result!.copyWith(cholesterol: val))),
+              _buildMacroRow('Trans-masti', info.transFat, Colors.red, (val) => setState(() => _result = _result!.copyWith(transFat: val))),
               
               if (info.confidenceNote.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.md),
@@ -338,16 +357,79 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
                 onPressed: () async {
                   final user = ref.read(currentUserProvider);
                   if (user != null) {
-                    // Ovdje spremamo obrok (idemo u repozitorij)
-                    await ref.read(mealRepositoryProvider).saveMeal(user.id, info);
+                    await ref.read(mealRepositoryProvider).saveMeal(user.id, _result!);
                     if (mounted) Navigator.pop(context);
                   }
                 },
+              ),
+              Center(
+                child: Text(
+                  'Savjet: Dodirnite brojke za ispravak',
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.5)),
+                ),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEditableText(String initialValue, TextStyle style, Function(String) onSave) {
+    return GestureDetector(
+      onTap: () async {
+        final controller = TextEditingController(text: initialValue);
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.backgroundElevated,
+            title: const Text('Naziv obroka', style: TextStyle(color: Colors.white)),
+            content: TextField(
+              controller: controller, 
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(hintText: 'Unesi naziv...', hintStyle: TextStyle(color: Colors.white54)),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+              TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Spremi', style: TextStyle(color: AppColors.primary))),
+            ],
+          ),
+        );
+        if (result != null) onSave(result);
+      },
+      child: Text(initialValue, style: style),
+    );
+  }
+
+  Widget _buildEditableNumber(double initialValue, String suffix, TextStyle style, Function(double) onSave) {
+    return GestureDetector(
+      onTap: () async {
+        final controller = TextEditingController(text: initialValue.toStringAsFixed(1));
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.backgroundElevated,
+            title: Text('Uredi $suffix', style: const TextStyle(color: Colors.white)),
+            content: TextField(
+              controller: controller, 
+              autofocus: true, 
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(hintText: 'Unesi broj...', hintStyle: TextStyle(color: Colors.white54)),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+              TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Spremi', style: TextStyle(color: AppColors.primary))),
+            ],
+          ),
+        );
+        if (result != null) {
+          final val = double.tryParse(result);
+          if (val != null) onSave(val);
+        }
+      },
+      child: Text('${initialValue.toStringAsFixed(0)} $suffix', style: style),
     );
   }
 
@@ -379,7 +461,17 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        _result = meal;
+                        _result = NutritionInfo(
+                          mealName: meal.mealName,
+                          ingredients: meal.ingredients,
+                          calories: meal.calories,
+                          protein: meal.protein,
+                          carbs: meal.carbs,
+                          fat: meal.fat,
+                          confidenceNote: meal.confidenceNote,
+                          category: _selectedCategory, // Koristimo trenutno odabranu kategoriju
+                          timestamp: DateTime.now(),   // Resetiramo na sadašnje vrijeme
+                        );
                         _controller.text = meal.mealName;
                       });
                     },
@@ -419,17 +511,50 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
     );
   }
 
-  Widget _buildMacroRow(String label, double value, Color color) {
+  Widget _buildMacroRow(String label, double value, Color color, Function(double) onEdit) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: AppSpacing.sm),
-          Text(label, style: AppTypography.body),
-          const Spacer(),
-          Text('${value.toStringAsFixed(1)}g', style: AppTypography.labelLg),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: InkWell(
+        onTap: () async {
+          final controller = TextEditingController(text: value.toStringAsFixed(1));
+          final result = await showDialog<String>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: AppColors.backgroundElevated,
+              title: Text('Uredi $label', style: const TextStyle(color: Colors.white)),
+              content: TextField(
+                controller: controller, 
+                autofocus: true, 
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(hintText: 'Unesi gramažu...', hintStyle: TextStyle(color: Colors.white54)),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+                TextButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Spremi', style: TextStyle(color: AppColors.primary))),
+              ],
+            ),
+          );
+          if (result != null) {
+            final val = double.tryParse(result);
+            if (val != null) onEdit(val);
+          }
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: AppSpacing.sm),
+              Text(label, style: AppTypography.body),
+              const Spacer(),
+              Text('${value.toStringAsFixed(1)}g', style: AppTypography.labelLg),
+              const SizedBox(width: 8),
+              Icon(Icons.edit, size: 14, color: AppColors.textSecondary.withOpacity(0.3)),
+            ],
+          ),
+        ),
       ),
     );
   }

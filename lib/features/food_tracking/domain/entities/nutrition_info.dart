@@ -6,6 +6,14 @@ class NutritionInfo {
   final double protein;
   final double carbs;
   final double fat;
+  // Detailed Macros
+  final double sugar;
+  final double fiber;
+  final double sodium; // in mg
+  final double saturatedFat;
+  final double cholesterol; // in mg
+  final double transFat;
+  
   final String confidenceNote;
   final String category; // Doručak, Ručak, Večera, Snack
   final DateTime? timestamp;
@@ -18,10 +26,54 @@ class NutritionInfo {
     required this.protein,
     required this.carbs,
     required this.fat,
+    this.sugar = 0,
+    this.fiber = 0,
+    this.sodium = 0,
+    this.saturatedFat = 0,
+    this.cholesterol = 0,
+    this.transFat = 0,
     this.confidenceNote = '',
     this.category = 'Ručak',
     this.timestamp,
   });
+
+  NutritionInfo copyWith({
+    String? id,
+    String? mealName,
+    List<String>? ingredients,
+    int? calories,
+    double? protein,
+    double? carbs,
+    double? fat,
+    double? sugar,
+    double? fiber,
+    double? sodium,
+    double? saturatedFat,
+    double? cholesterol,
+    double? transFat,
+    String? confidenceNote,
+    String? category,
+    DateTime? timestamp,
+  }) {
+    return NutritionInfo(
+      id: id ?? this.id,
+      mealName: mealName ?? this.mealName,
+      ingredients: ingredients ?? this.ingredients,
+      calories: calories ?? this.calories,
+      protein: protein ?? this.protein,
+      carbs: carbs ?? this.carbs,
+      fat: fat ?? this.fat,
+      sugar: sugar ?? this.sugar,
+      fiber: fiber ?? this.fiber,
+      sodium: sodium ?? this.sodium,
+      saturatedFat: saturatedFat ?? this.saturatedFat,
+      cholesterol: cholesterol ?? this.cholesterol,
+      transFat: transFat ?? this.transFat,
+      confidenceNote: confidenceNote ?? this.confidenceNote,
+      category: category ?? this.category,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -31,6 +83,12 @@ class NutritionInfo {
       'protein': protein,
       'carbs': carbs,
       'fat': fat,
+      'sugar': sugar,
+      'fiber': fiber,
+      'sodium': sodium,
+      'saturatedFat': saturatedFat,
+      'cholesterol': cholesterol,
+      'transFat': transFat,
       'confidenceNote': confidenceNote,
       'category': category,
       'timestamp': timestamp?.toIso8601String() ?? DateTime.now().toIso8601String(),
@@ -61,6 +119,12 @@ class NutritionInfo {
       protein: (json['protein'] as num).toDouble(),
       carbs: (json['carbs'] as num).toDouble(),
       fat: (json['fat'] as num).toDouble(),
+      sugar: (json['sugar'] as num? ?? 0).toDouble(),
+      fiber: (json['fiber'] as num? ?? 0).toDouble(),
+      sodium: (json['sodium'] as num? ?? 0).toDouble(),
+      saturatedFat: (json['saturatedFat'] as num? ?? 0).toDouble(),
+      cholesterol: (json['cholesterol'] as num? ?? 0).toDouble(),
+      transFat: (json['transFat'] as num? ?? 0).toDouble(),
       confidenceNote: json['confidenceNote'] as String? ?? '',
       category: json['category'] as String? ?? 'Ručak',
       timestamp: parsedDate,
