@@ -61,9 +61,11 @@ class GeminiAIService implements AIService {
     2. A protein-dense meal.
     3. A balanced meal fitting the remaining macros.
     
+    IMPORTANT: ALL text responses (title, description, type) MUST be in the Croatian language.
+    
     Return a JSON array of objects with these fields:
-    - title (String): Short name of the meal.
-    - description (String): Brief explanation why this is good now.
+    - title (String): Short name of the meal (in Croatian).
+    - description (String): Brief explanation why this is good now (in Croatian).
     - calories (int): Realistic estimated calories.
     - protein (double): Realistic grams of protein (avoid overestimation).
     - carbs (double): Realistic grams of carbs.
@@ -116,9 +118,11 @@ class GeminiAIService implements AIService {
     3. Analyze ${imageBytes != null ? 'the image and description' : 'the description'} carefully.
     4. Account for preparation methods (fried vs grilled).
     
+    IMPORTANT: ALL text responses (mealName, ingredients, confidenceNote) MUST be in the Croatian language.
+    
     Return a JSON object with:
-    - mealName (String): Descriptive name.
-    - ingredients (List<String>): Detect main ingredients and estimated weights.
+    - mealName (String): Descriptive name (in Croatian).
+    - ingredients (List<String>): Detect main ingredients and estimated weights (in Croatian).
     - calories (int): Estimated total calories.
     - protein (double): Estimated protein (be realistic!).
     - carbs (double): Estimated carbohydrates.
@@ -129,7 +133,7 @@ class GeminiAIService implements AIService {
     - saturatedFat (double): Estimated saturated fat in grams.
     - cholesterol (double): Estimated cholesterol in MILLIGRAMS (mg).
     - transFat (double): Estimated trans fat in grams.
-    - confidenceNote (String): Explain your estimation logic.
+    - confidenceNote (String): Explain your estimation logic (in Croatian).
     
     Return ONLY raw JSON.
     """;
@@ -166,16 +170,18 @@ class GeminiAIService implements AIService {
   Future<List<Map<String, dynamic>>> searchRestaurants(String city, String category) async {
     final prompt = """
     Ponašaj se kao lokalni vodič za zdravu prehranu. 
-    Pronađi 5 popularnih restorana u gradu $city koji spadaju u kategoriju: $category.
+    Pronađi 5 STVARNIH i popularnih restorana u gradu $city koji spadaju u kategoriju: $category.
+    NE IZMIŠLJAJ PODATKE. Ako nisi siguran u adresu, koristi samo naziv mjesta i grad.
+    
     Fokusiraj se na mjesta koja su "Fit-friendly", imaju nutritivne podatke ili su poznata po zdravoj hrani (npr. bez glutena, vegan, high protein).
     
     Vrati listu u JSON formatu s poljima:
-    - name (String)
-    - address (String)
-    - rating (double, npr. 4.5)
-    - description (String, kratko na hrvatskom zašto je dobro za fitness)
-    - tags (List<String>, npr. ["Bez glutena", "Vegan", "Fit"])
-    - websiteUrl (String, link na web ili Google Maps)
+    - name (String): Točan naziv restorana.
+    - address (String): Točna adresa u gradu $city.
+    - rating (double): Procjena ocjene (npr. 4.5).
+    - description (String): Zašto je ovo dobro za fitness (na hrvatskom).
+    - tags (List<String>): npr. ["Bez glutena", "Vegan", "Fit"].
+    - websiteUrl (String): OBAVEZNO generiraj link u formatu: https://www.google.com/maps/search/?api=1&query=NAZIV+RESTORANA+$city
     
     Vrati SAMO sirovi JSON.
     """;
@@ -196,6 +202,44 @@ class GeminiAIService implements AIService {
     } catch (e) {
       debugPrint('Error searching restaurants: $e');
       return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> analyzeRestaurants(List<Map<String, dynamic>> places) async {
+    if (places.isEmpty) return [];
+
+    final placesJson = jsonEncode(places);
+    final prompt = """
+    Ponašaj se kao stručnjak za fitness prehranu. 
+    Dobio sam listu stvarnih restorana s Google Mapsa: $placesJson
+    
+    Za svaki od ovih restorana, napiši:
+    1. Kratki opis (description) na hrvatskom zašto je dobar za osobu koja pazi na prehranu/fitness.
+    2. Listu tagova (npr. ["Bez glutena", "High Protein", "Vegan"]).
+    
+    Vrati istu listu u JSON formatu, ali svakom objektu DODAJ polja 'description' i 'tags'.
+    Također, za svakog generiraj 'websiteUrl' koristeći ovaj format:
+    https://www.google.com/maps/search/?api=1&query=NAZIV+ADRESA
+    
+    Vrati SAMO sirovi JSON listu objekata.
+    """;
+
+    try {
+      final response = await _model.generateContent([Content.text(prompt)]);
+      final text = response.text;
+      if (text == null) return places;
+
+      String cleanedText = text.trim();
+      if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replaceAll(RegExp(r'^```(json)?\n?'), '');
+        cleanedText = cleanedText.replaceAll(RegExp(r'\n?```$'), '');
+      }
+
+      final List<dynamic> analyzedData = jsonDecode(cleanedText);
+      return analyzedData.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('Error analyzing restaurants: $e');
+      return places;
     }
   }
 }

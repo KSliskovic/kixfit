@@ -169,10 +169,17 @@ class _RestaurantSearchScreenState extends ConsumerState<RestaurantSearchScreen>
           children: restaurants.map<Widget>((res) => _buildRestaurantCard(res)).toList(),
         );
       },
-      loading: () => const Center(
+      loading: () => Center(
         child: Padding(
-          padding: EdgeInsets.all(AppSpacing.xxl),
-          child: CircularProgressIndicator(color: AppColors.primary),
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(color: AppColors.primary),
+              const SizedBox(height: AppSpacing.md),
+              Text('AI pretražuje restorane...', style: AppTypography.caption.copyWith(color: AppColors.primaryLight)),
+            ],
+          ),
         ),
       ),
       error: (err, stack) => Center(
@@ -240,11 +247,18 @@ class _RestaurantSearchScreenState extends ConsumerState<RestaurantSearchScreen>
   }
 
   Future<void> _launchURL(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    // Često AI vrati link s razmacima koji nisu enkodirani
+    final sanitizedUrl = url.trim().replaceAll(' ', '+');
+    final uri = Uri.parse(sanitizedUrl);
+    
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ne mogu otvoriti link')),
+          SnackBar(content: Text('Ne mogu otvoriti lokaciju: $url')),
         );
       }
     }

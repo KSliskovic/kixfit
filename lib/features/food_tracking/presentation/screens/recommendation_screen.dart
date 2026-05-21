@@ -87,7 +87,16 @@ class _RecommendationScreenState extends ConsumerState<RecommendationScreen> {
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: AppSpacing.md),
+                  Text('AI priprema prijedloge...', style: AppTypography.caption.copyWith(color: AppColors.primaryLight)),
+                ],
+              ),
+            )
           : _error != null
               ? Center(child: Text(_error!, style: AppTypography.label))
               : SingleChildScrollView(

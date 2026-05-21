@@ -14,6 +14,7 @@ import '../../../../features/food_tracking/presentation/providers/meal_provider.
 import '../../../../features/food_tracking/domain/entities/nutrition_info.dart';
 import '../../../../features/water_tracking/presentation/providers/water_provider.dart';
 import '../widgets/macro_ring.dart';
+import '../providers/display_mode_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -40,7 +41,15 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.large(
-        onPressed: () => context.push('/food-entry'),
+        onPressed: () {
+          final hour = DateTime.now().hour;
+          String guess = 'Snack';
+          if (hour >= 5 && hour < 11) guess = 'Doručak';
+          else if (hour >= 11 && hour < 16) guess = 'Ručak';
+          else if (hour >= 16 && hour < 22) guess = 'Večera';
+          
+          context.push('/food-entry', extra: guess);
+        },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, size: 36, color: Colors.white),
       ),
@@ -109,7 +118,7 @@ class DashboardScreen extends ConsumerWidget {
               totalSugar, totalFiber, totalSodium, totalSaturatedFat,
               totalCholesterol, totalTransFat,
             ),
-            child: _buildMacroSection(totalCalories, targetCals, totalProtein, totalCarbs, totalFat),
+            child: _buildMacroSection(ref, profile, totalCalories, targetCals, totalProtein, totalCarbs, totalFat),
           ),
           const SizedBox(height: AppSpacing.md),
           
@@ -263,6 +272,12 @@ class DashboardScreen extends ConsumerWidget {
               Text(title, style: AppTypography.labelLg.copyWith(color: AppColors.primaryLight)),
               const SizedBox(width: 8),
               Expanded(child: Divider(color: AppColors.glassStroke)),
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryLight, size: 20),
+                onPressed: () => context.push('/food-entry', extra: title),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ],
           ),
         ),
@@ -279,18 +294,46 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, WidgetRef ref, String name) {
+    final displayMode = ref.watch(dashboardDisplayModeProvider);
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Zdravo, $name!', style: AppTypography.h2),
-            Text('Tvoj AI trener je spreman.', style: AppTypography.bodySm),
-          ],
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                name, 
+                style: AppTypography.h2.copyWith(
+                  fontSize: 24,
+                  letterSpacing: 1.1,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
         ),
+        const SizedBox(width: 8),
         Row(
           children: [
+            IconButton(
+              onPressed: () {
+                ref.read(dashboardDisplayModeProvider.notifier).toggle();
+              },
+              icon: Icon(
+                displayMode == DashboardDisplayMode.consumed ? Icons.trending_up : Icons.timer_outlined,
+                color: AppColors.secondary,
+              ),
+              tooltip: displayMode == DashboardDisplayMode.consumed ? 'Prikaži preostalo' : 'Prikaži uneseno',
+            ),
             IconButton(
               onPressed: () => context.push('/restaurants'),
               icon: const Icon(Icons.restaurant_menu, color: AppColors.primaryLight),
@@ -400,9 +443,17 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMacroSection(int total, int target, double p, double c, double f) {
+  Widget _buildMacroSection(WidgetRef ref, UserProfile? profile, int total, int target, double p, double c, double f) {
+    final displayMode = ref.watch(dashboardDisplayModeProvider);
     final remaining = target - total;
     final isExceeded = remaining < 0;
+
+    // Ciljevi iz profila
+    final pTarget = profile?.proteinTarget ?? 150.0;
+    final cTarget = profile?.carbsTarget ?? 250.0;
+    final fTarget = profile?.fatTarget ?? 70.0;
+
+    final isRemainingMode = displayMode == DashboardDisplayMode.remaining;
 
     return GlassCard(
       child: Column(
@@ -412,16 +463,39 @@ class DashboardScreen extends ConsumerWidget {
             strokeWidth: 12,
             progress: total / target,
             color: isExceeded ? AppColors.error : AppColors.primary,
-            label: isExceeded ? 'kcal premašeno' : 'kcal preostalo',
-            value: isExceeded ? '$remaining' : '$remaining',
+            label: isRemainingMode 
+                ? (isExceeded ? 'kcal premašeno' : 'kcal preostalo')
+                : 'kcal uneseno',
+            value: isRemainingMode ? '$remaining' : '$total',
           ),
           const SizedBox(height: AppSpacing.xl),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSmallMacro('Protein', p, 150, p > 150 ? AppColors.error : AppColors.macroProtein, Icons.fitness_center),
-              _buildSmallMacro('Ugljik.', c, 250, c > 250 ? AppColors.error : AppColors.macroCarbs, Icons.bolt),
-              _buildSmallMacro('Masti', f, 70, f > 70 ? AppColors.error : AppColors.macroFat, Icons.water_drop),
+              _buildSmallMacro(
+                'Protein', 
+                isRemainingMode ? (pTarget - p) : p, 
+                pTarget, 
+                p > pTarget ? AppColors.error : AppColors.macroProtein, 
+                Icons.fitness_center,
+                isRemainingMode,
+              ),
+              _buildSmallMacro(
+                'Ugljik.', 
+                isRemainingMode ? (cTarget - c) : c, 
+                cTarget, 
+                c > cTarget ? AppColors.error : AppColors.macroCarbs, 
+                Icons.bolt,
+                isRemainingMode,
+              ),
+              _buildSmallMacro(
+                'Masti', 
+                isRemainingMode ? (fTarget - f) : f, 
+                fTarget, 
+                f > fTarget ? AppColors.error : AppColors.macroFat, 
+                Icons.water_drop,
+                isRemainingMode,
+              ),
             ],
           ),
         ],
@@ -429,7 +503,9 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSmallMacro(String label, double val, double target, Color color, IconData icon) {
+  Widget _buildSmallMacro(String label, double val, double target, Color color, IconData icon, bool isRemainingMode) {
+    final displayVal = val.toInt();
+    
     return Column(
       children: [
         Stack(
@@ -439,7 +515,7 @@ class DashboardScreen extends ConsumerWidget {
               width: 60,
               height: 60,
               child: CircularProgressIndicator(
-                value: val / target,
+                value: (isRemainingMode ? (target - val) : val) / target,
                 backgroundColor: color.withOpacity(0.1),
                 color: color,
                 strokeWidth: 6,
@@ -450,37 +526,40 @@ class DashboardScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text(label, style: AppTypography.caption),
-        Text('${val.toInt()}g', style: AppTypography.label),
+        Text('$displayVal g', style: AppTypography.label.copyWith(color: color)),
       ],
     );
   }
 
   Widget _buildMealItem(BuildContext context, WidgetRef ref, String userId, NutritionInfo meal) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundElevated,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.glassStroke),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(meal.mealName, style: AppTypography.labelLg),
-                Text('${meal.calories} kcal • P:${meal.protein.toInt()}g U:${meal.carbs.toInt()}g M:${meal.fat.toInt()}g', 
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-              ],
+    return GestureDetector(
+      onTap: () => context.push('/meal-detail', extra: meal),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundElevated,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.glassStroke),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(meal.mealName, style: AppTypography.labelLg),
+                  Text('${meal.calories} kcal • P:${meal.protein.toInt()}g U:${meal.carbs.toInt()}g M:${meal.fat.toInt()}g', 
+                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-            onPressed: () => _confirmDelete(context, ref, userId, meal),
-          ),
-        ],
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+              onPressed: () => _confirmDelete(context, ref, userId, meal),
+            ),
+          ],
+        ),
       ),
     );
   }

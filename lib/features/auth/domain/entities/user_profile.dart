@@ -9,13 +9,6 @@ class UserProfile {
   final String goals;
   final int dailyCaloriesTarget;
 
-  double get sugarTarget => (dailyCaloriesTarget * 0.10) / 4; // Max 10% kalorija
-  double get fiberTarget => (dailyCaloriesTarget / 1000) * 14; // 14g na 1000 kcal
-  double get sodiumTarget => 2300.0; // Standardni limit u mg
-  double get saturatedFatTarget => (dailyCaloriesTarget * 0.10) / 9; // Max 10% kalorija
-  double get cholesterolTarget => 300.0; // Standardni limit u mg
-  double get transFatTarget => 0.0; // Idealno 0
-
   UserProfile({
     required this.id,
     required this.displayName,
@@ -27,6 +20,30 @@ class UserProfile {
     required this.goals,
     required this.dailyCaloriesTarget,
   });
+
+  // Harris-Benedict Formula za BMR
+  double get bmr {
+    if (gender.toLowerCase() == 'žensko') {
+      return 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+    } else {
+      return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+    }
+  }
+
+  // Pretpostavljamo umjerenu aktivnost (1.55) ako nije drugačije definirano
+  // Ovdje koristimo dailyCaloriesTarget kao glavni izvor istine, 
+  // ali možemo izračunati i preporučene makrose na temelju toga.
+  
+  double get proteinTarget => (dailyCaloriesTarget * 0.30) / 4; // 30% kalorija iz proteina
+  double get carbsTarget => (dailyCaloriesTarget * 0.40) / 4;   // 40% kalorija iz ugljikohidrata
+  double get fatTarget => (dailyCaloriesTarget * 0.30) / 9;     // 30% kalorija iz masti
+
+  double get sugarTarget => (dailyCaloriesTarget * 0.10) / 4; 
+  double get fiberTarget => (dailyCaloriesTarget / 1000) * 14;
+  double get sodiumTarget => 2300.0;
+  double get saturatedFatTarget => (dailyCaloriesTarget * 0.10) / 9;
+  double get cholesterolTarget => 300.0;
+  double get transFatTarget => 0.0;
 
   Map<String, dynamic> toJson() {
     return {

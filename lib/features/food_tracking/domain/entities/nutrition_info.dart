@@ -17,6 +17,7 @@ class NutritionInfo {
   final String confidenceNote;
   final String category; // Doručak, Ručak, Večera, Snack
   final DateTime? timestamp;
+  final String? imageUrl;
 
   NutritionInfo({
     this.id,
@@ -35,6 +36,7 @@ class NutritionInfo {
     this.confidenceNote = '',
     this.category = 'Ručak',
     this.timestamp,
+    this.imageUrl,
   });
 
   NutritionInfo copyWith({
@@ -54,6 +56,7 @@ class NutritionInfo {
     String? confidenceNote,
     String? category,
     DateTime? timestamp,
+    String? imageUrl,
   }) {
     return NutritionInfo(
       id: id ?? this.id,
@@ -72,6 +75,7 @@ class NutritionInfo {
       confidenceNote: confidenceNote ?? this.confidenceNote,
       category: category ?? this.category,
       timestamp: timestamp ?? this.timestamp,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 
@@ -92,6 +96,7 @@ class NutritionInfo {
       'confidenceNote': confidenceNote,
       'category': category,
       'timestamp': timestamp?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      'imageUrl': imageUrl,
     };
   }
 
@@ -128,6 +133,7 @@ class NutritionInfo {
       confidenceNote: json['confidenceNote'] as String? ?? '',
       category: json['category'] as String? ?? 'Ručak',
       timestamp: parsedDate,
+      imageUrl: json['imageUrl'] as String?,
     );
   }
 }

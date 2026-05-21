@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -14,9 +15,12 @@ import '../../domain/entities/nutrition_info.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/data/repositories/profile_repository.dart';
 import '../providers/meal_provider.dart';
+import '../../../../services/storage/storage_service.dart';
 
 class FoodEntryScreen extends ConsumerStatefulWidget {
-  const FoodEntryScreen({super.key});
+  final String? initialCategory;
+  final NutritionInfo? initialMeal;
+  const FoodEntryScreen({super.key, this.initialCategory, this.initialMeal});
 
   @override
   ConsumerState<FoodEntryScreen> createState() => _FoodEntryScreenState();
@@ -29,8 +33,9 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
   
   bool _isListening = false;
   bool _isAnalyzing = false;
+  bool _isSaving = false;
   NutritionInfo? _result;
-  String _selectedCategory = 'Ručak';
+  late String _selectedCategory;
   XFile? _imageFile;
   Uint8List? _imageBytes;
 
@@ -39,6 +44,13 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialMeal != null) {
+      _result = widget.initialMeal;
+      _selectedCategory = widget.initialMeal!.category;
+      _controller.text = widget.initialMeal!.mealName;
+    } else {
+      _selectedCategory = widget.initialCategory ?? 'Ručak';
+    }
     _initSpeech();
   }
 
@@ -239,8 +251,14 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
               const SizedBox(height: AppSpacing.xxl),
               
               if (_isAnalyzing)
-                const Center(
-                  child: CircularProgressIndicator(),
+                Center(
+                  child: Column(
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: AppSpacing.md),
+                      Text('AI analizira, pričekajte...', style: AppTypography.caption.copyWith(color: AppColors.primaryLight)),
+                    ],
+                  ),
                 ).animate().fadeIn(),
                 
               if (_result != null)
@@ -352,13 +370,31 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
               
               const SizedBox(height: AppSpacing.lg),
               AppButton(
-                text: 'Spremi u dnevnik',
+                text: _isSaving ? 'Spremanje...' : 'Spremi u dnevnik',
                 style: AppButtonStyle.secondary,
-                onPressed: () async {
+                isLoading: _isSaving,
+                onPressed: _isSaving ? null : () async {
                   final user = ref.read(currentUserProvider);
                   if (user != null) {
-                    await ref.read(mealRepositoryProvider).saveMeal(user.id, _result!);
-                    if (mounted) Navigator.pop(context);
+                    setState(() => _isSaving = true);
+                    try {
+                      String? uploadedImageUrl;
+                      if (_imageFile != null) {
+                        uploadedImageUrl = await ref.read(storageServiceProvider).uploadMealImage(user.id, File(_imageFile!.path));
+                      }
+                      
+                      final mealToSave = _result!.copyWith(imageUrl: uploadedImageUrl);
+                      await ref.read(mealRepositoryProvider).saveMeal(user.id, mealToSave);
+                      
+                      if (mounted) Navigator.pop(context);
+                    } catch (e) {
+                      setState(() => _isSaving = false);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Greška pri spremanju: $e')),
+                        );
+                      }
+                    }
                   }
                 },
               ),
@@ -434,80 +470,48 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
   }
 
   Widget _buildRecentMealsSection() {
-    final user = ref.watch(currentUserProvider);
-    if (user == null) return const SizedBox.shrink();
-
-    final recentMealsAsync = ref.watch(recentMealsProvider(user.id));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Često korištena jela', style: AppTypography.label.copyWith(color: AppColors.primaryLight)),
-        const SizedBox(height: AppSpacing.sm),
-        SizedBox(
-          height: 100,
-          child: recentMealsAsync.when(
-            data: (meals) {
-              if (meals.isEmpty) {
-                return Center(
-                  child: Text('Još nemaš povijest jela', style: AppTypography.caption),
-                );
-              }
-              return ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: meals.length,
-                itemBuilder: (context, index) {
-                  final meal = meals[index];
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _result = NutritionInfo(
-                          mealName: meal.mealName,
-                          ingredients: meal.ingredients,
-                          calories: meal.calories,
-                          protein: meal.protein,
-                          carbs: meal.carbs,
-                          fat: meal.fat,
-                          confidenceNote: meal.confidenceNote,
-                          category: _selectedCategory, // Koristimo trenutno odabranu kategoriju
-                          timestamp: DateTime.now(),   // Resetiramo na sadašnje vrijeme
-                        );
-                        _controller.text = meal.mealName;
-                      });
-                    },
-                    child: Container(
-                      width: 140,
-                      margin: const EdgeInsets.only(right: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundElevated,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.glassStroke),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            meal.mealName,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.label,
-                          ),
-                          const SizedBox(height: 4),
-                          Text('${meal.calories} kcal', style: AppTypography.caption.copyWith(color: AppColors.primary)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
+    return GestureDetector(
+      onTap: () => context.push('/meal-library'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundElevated,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-      ],
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.history, color: AppColors.primaryLight),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Vaša česta jela', style: AppTypography.labelLg),
+                  const SizedBox(height: 2),
+                  Text('Pretraži povijest obroka', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white54),
+          ],
+        ),
+      ),
     );
   }
 
