@@ -20,7 +20,7 @@ class StorageService {
       return downloadUrl;
     } catch (e) {
       print('Error uploading image: $e');
-      return null;
+      throw Exception('Neuspješan upload slike: $e');
     }
   }
 }
