@@ -40,15 +40,25 @@ class _MealDetailScreenState extends ConsumerState<MealDetailScreen> {
     if (user == null || _currentMeal.id == null) return;
 
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery, 
+        imageQuality: 50,
+        maxWidth: 800,
+      );
       if (pickedFile == null) return;
 
       setState(() => _isUploadingImage = true);
 
       final uploadedUrl = await ref.read(storageServiceProvider).uploadMealImage(user.id, File(pickedFile.path));
       if (uploadedUrl != null) {
+        final oldImageUrl = _currentMeal.imageUrl;
         final updatedMeal = _currentMeal.copyWith(imageUrl: uploadedUrl);
         await ref.read(mealRepositoryProvider).saveMeal(user.id, updatedMeal);
+        
+        if (oldImageUrl != null) {
+          ref.read(storageServiceProvider).deleteImageByUrl(oldImageUrl);
+        }
+
         setState(() {
           _currentMeal = updatedMeal;
         });
@@ -56,6 +66,31 @@ class _MealDetailScreenState extends ConsumerState<MealDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Greška: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
+  Future<void> _removeImage() async {
+    final user = ref.read(currentUserProvider);
+    if (user == null || _currentMeal.id == null || _currentMeal.imageUrl == null) return;
+
+    final oldImageUrl = _currentMeal.imageUrl!;
+    
+    setState(() => _isUploadingImage = true);
+    try {
+      final updatedMeal = _currentMeal.copyWith(imageUrl: null);
+      await ref.read(mealRepositoryProvider).saveMeal(user.id, updatedMeal);
+      
+      ref.read(storageServiceProvider).deleteImageByUrl(oldImageUrl);
+      
+      setState(() {
+        _currentMeal = updatedMeal;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Greška pri brisanju: $e')));
       }
     } finally {
       if (mounted) setState(() => _isUploadingImage = false);
@@ -128,12 +163,18 @@ class _MealDetailScreenState extends ConsumerState<MealDetailScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       actions: [
-        if (_currentMeal.imageUrl != null)
+        if (_currentMeal.imageUrl != null) ...[
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Colors.white),
             onPressed: _pickAndUploadImage,
             tooltip: 'Promijeni sliku',
           ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.white),
+            onPressed: _removeImage,
+            tooltip: 'Obriši sliku',
+          ),
+        ],
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: _currentMeal.imageUrl != null
@@ -164,6 +205,13 @@ class _MealDetailScreenState extends ConsumerState<MealDetailScreen> {
                         ),
                       ),
                     ),
+                    if (_isUploadingImage)
+                      Container(
+                        color: Colors.black54,
+                        child: const Center(
+                          child: CircularProgressIndicator(color: AppColors.primaryLight),
+                        ),
+                      ),
                   ],
                 ),
               )

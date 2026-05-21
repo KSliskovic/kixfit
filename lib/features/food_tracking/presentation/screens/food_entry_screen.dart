@@ -62,8 +62,8 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
     try {
       final XFile? selected = await _picker.pickImage(
         source: source,
-        imageQuality: 70,
-        maxWidth: 1000,
+        imageQuality: 50,
+        maxWidth: 800,
       );
       
       if (selected != null) {

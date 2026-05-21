@@ -23,4 +23,14 @@ class StorageService {
       throw Exception('Neuspješan upload slike: $e');
     }
   }
+
+  Future<void> deleteImageByUrl(String imageUrl) async {
+    try {
+      final ref = _storage.refFromURL(imageUrl);
+      await ref.delete();
+    } catch (e) {
+      print('Error deleting image: $e');
+      // We don't throw here because failing to delete an old image shouldn't crash the app
+    }
+  }
 }
