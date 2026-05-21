@@ -57,6 +57,7 @@ class NutritionInfo {
     String? category,
     DateTime? timestamp,
     String? imageUrl,
+    bool clearImageUrl = false,
   }) {
     return NutritionInfo(
       id: id ?? this.id,
@@ -75,7 +76,7 @@ class NutritionInfo {
       confidenceNote: confidenceNote ?? this.confidenceNote,
       category: category ?? this.category,
       timestamp: timestamp ?? this.timestamp,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
     );
   }
 

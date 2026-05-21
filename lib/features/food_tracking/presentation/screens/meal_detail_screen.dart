@@ -80,7 +80,7 @@ class _MealDetailScreenState extends ConsumerState<MealDetailScreen> {
     
     setState(() => _isUploadingImage = true);
     try {
-      final updatedMeal = _currentMeal.copyWith(imageUrl: null);
+      final updatedMeal = _currentMeal.copyWith(clearImageUrl: true);
       await ref.read(mealRepositoryProvider).saveMeal(user.id, updatedMeal);
       
       ref.read(storageServiceProvider).deleteImageByUrl(oldImageUrl);

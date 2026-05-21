@@ -7,11 +7,12 @@ class FirestoreMealRepository implements MealRepository {
 
   @override
   Future<void> saveMeal(String userId, NutritionInfo meal) async {
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('meals')
-        .add(meal.toJson());
+    final docRef = _firestore.collection('users').doc(userId).collection('meals');
+    if (meal.id != null && meal.id!.isNotEmpty) {
+      await docRef.doc(meal.id).set(meal.toJson(), SetOptions(merge: true));
+    } else {
+      await docRef.add(meal.toJson());
+    }
   }
 
   @override
