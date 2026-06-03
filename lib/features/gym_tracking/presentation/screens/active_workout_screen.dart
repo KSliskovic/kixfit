@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../domain/entities/default_exercises.dart';
 import '../../domain/entities/workout_exercise.dart';
 import '../../domain/entities/workout_set.dart';
 import '../providers/active_workout_provider.dart';
+import '../widgets/exercise_picker.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   const ActiveWorkoutScreen({super.key});
@@ -394,68 +394,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   void _showAddExerciseModal(BuildContext context) {
-    String searchQuery = '';
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.backgroundCard,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          final filtered = defaultExercises.where((ex) {
-            return ex.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                ex.muscleGroup.toLowerCase().contains(searchQuery.toLowerCase());
-          }).toList();
-
-          return DraggableScrollableSheet(
-            initialChildSize: 0.8,
-            maxChildSize: 0.95,
-            minChildSize: 0.5,
-            expand: false,
-            builder: (context, scrollController) => Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40, height: 4,
-                      decoration: BoxDecoration(color: AppColors.glassStroke, borderRadius: BorderRadius.circular(2)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Pretraži vježbe po nazivu ili mišićnoj grupi...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onChanged: (val) => setState(() => searchQuery = val),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      controller: scrollController,
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final ex = filtered[index];
-                        return ListTile(
-                          title: Text(ex.name),
-                          subtitle: Text('${ex.muscleGroup} • ${ex.equipment}'),
-                          trailing: const Icon(Icons.add, color: AppColors.primaryLight),
-                          onTap: () {
-                            ref.read(activeWorkoutProvider.notifier).addExercise(ex);
-                            Navigator.pop(context);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
+    showExercisePicker(context, ref, (exercise) {
+      ref.read(activeWorkoutProvider.notifier).addExercise(exercise);
+    });
   }
 }

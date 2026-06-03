@@ -1,5 +1,6 @@
 import '../entities/workout_template.dart';
 import '../entities/workout_session.dart';
+import '../entities/exercise.dart';
 
 abstract class GymRepository {
   // Templates (Splits)
@@ -11,4 +12,8 @@ abstract class GymRepository {
   Future<void> saveSession(String userId, WorkoutSession session);
   Future<void> deleteSession(String userId, String sessionId);
   Stream<List<WorkoutSession>> watchSessions(String userId);
+
+  // Custom Exercises
+  Future<void> saveCustomExercise(String userId, Exercise exercise);
+  Stream<List<Exercise>> watchCustomExercises(String userId);
 }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/workout_template.dart';
 import '../../domain/entities/workout_session.dart';
+import '../../domain/entities/exercise.dart';
+import '../../domain/entities/default_exercises.dart';
 import '../../domain/repositories/gym_repository.dart';
 import '../../data/repositories/firebase_gym_repository.dart';
 
@@ -22,4 +24,16 @@ final workoutHistoryProvider = StreamProvider.autoDispose<List<WorkoutSession>>(
   if (user == null) return Stream.value([]);
   
   return ref.watch(gymRepositoryProvider).watchSessions(user.id);
+});
+
+final customExercisesProvider = StreamProvider.autoDispose<List<Exercise>>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return Stream.value([]);
+  
+  return ref.watch(gymRepositoryProvider).watchCustomExercises(user.id);
+});
+
+final allExercisesProvider = Provider.autoDispose<List<Exercise>>((ref) {
+  final custom = ref.watch(customExercisesProvider).value ?? [];
+  return [...defaultExercises, ...custom];
 });

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/workout_template.dart';
 import '../../domain/entities/workout_session.dart';
+import '../../domain/entities/exercise.dart';
 import '../../domain/repositories/gym_repository.dart';
 
 class FirebaseGymRepository implements GymRepository {
@@ -71,6 +72,29 @@ class FirebaseGymRepository implements GymRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => WorkoutSession.fromJson(doc.data()))
+            .toList());
+  }
+
+  @override
+  Future<void> saveCustomExercise(String userId, Exercise exercise) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('custom_exercises')
+        .doc(exercise.id)
+        .set(exercise.toJson());
+  }
+
+  @override
+  Stream<List<Exercise>> watchCustomExercises(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('custom_exercises')
+        .orderBy('name')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Exercise.fromJson(doc.data()))
             .toList());
   }
 }

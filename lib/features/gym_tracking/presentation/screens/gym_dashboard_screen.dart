@@ -13,6 +13,7 @@ import '../../domain/entities/workout_session.dart';
 import '../providers/gym_provider.dart';
 import '../providers/active_workout_provider.dart';
 import '../../../food_tracking/presentation/providers/meal_provider.dart'; // contains aiServiceProvider
+import 'template_form_screen.dart';
 
 class GymDashboardScreen extends ConsumerWidget {
   const GymDashboardScreen({super.key});
@@ -74,10 +75,23 @@ class GymDashboardScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Moji programi (Splitovi)', style: AppTypography.h3),
-                  TextButton.icon(
-                    onPressed: () => _showAiSplitGenerator(context, ref),
-                    icon: const Icon(Icons.auto_awesome, size: 16, color: AppColors.secondary),
-                    label: Text('AI Split', style: AppTypography.label.copyWith(color: AppColors.secondary)),
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const TemplateFormScreen()),
+                        ),
+                        icon: const Icon(Icons.add, size: 16, color: AppColors.primaryLight),
+                        label: Text('Novi', style: AppTypography.label.copyWith(color: AppColors.primaryLight)),
+                      ),
+                      const SizedBox(width: 4),
+                      TextButton.icon(
+                        onPressed: () => _showAiSplitGenerator(context, ref),
+                        icon: const Icon(Icons.auto_awesome, size: 16, color: AppColors.secondary),
+                        label: Text('AI Split', style: AppTypography.label.copyWith(color: AppColors.secondary)),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -213,6 +227,18 @@ class GymDashboardScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, color: AppColors.textSecondary),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TemplateFormScreen(template: template),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: AppColors.error),
                 onPressed: () {
