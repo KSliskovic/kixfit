@@ -47,11 +47,6 @@ class _GymDashboardScreenState extends ConsumerState<GymDashboardScreen> {
             ),
             tooltip: 'Biblioteka vježbi',
           ),
-          IconButton(
-            icon: const Icon(Icons.auto_awesome, color: AppColors.secondary),
-            onPressed: () => _showAiSplitGenerator(context, ref),
-            tooltip: 'Generiraj AI Split',
-          ),
         ],
       ),
       body: Container(
@@ -93,23 +88,21 @@ class _GymDashboardScreenState extends ConsumerState<GymDashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Moji programi', style: AppTypography.h3),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const TemplateFormScreen()),
-                        ),
-                        icon: const Icon(Icons.add, color: AppColors.primaryLight),
-                        tooltip: 'Novi program',
+                  if (!_showAiSplits)
+                    IconButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const TemplateFormScreen()),
                       ),
-                      IconButton(
-                        onPressed: () => _showAiSplitGenerator(context, ref),
-                        icon: const Icon(Icons.auto_awesome, color: AppColors.secondary),
-                        tooltip: 'Generiraj AI Split',
-                      ),
-                    ],
-                  ),
+                      icon: const Icon(Icons.add, color: AppColors.primaryLight),
+                      tooltip: 'Novi program',
+                    )
+                  else
+                    IconButton(
+                      onPressed: () => _showAiSplitGenerator(context, ref),
+                      icon: const Icon(Icons.auto_awesome, color: AppColors.secondary),
+                      tooltip: 'Generiraj AI Split',
+                    ),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
