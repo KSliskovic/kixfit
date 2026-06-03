@@ -207,7 +207,47 @@ void showExercisePicker(
                       return ListTile(
                         title: Text(ex.name),
                         subtitle: Text('${ex.muscleGroup} • ${ex.equipment}'),
-                        trailing: const Icon(Icons.add, color: AppColors.primaryLight),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (ex.id.startsWith('custom_')) ...[
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      backgroundColor: AppColors.backgroundCard,
+                                      title: const Text('Obriši vježbu?'),
+                                      content: Text('Jesi li siguran/na da želiš trajno obrisati vježbu "${ex.name}"?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Odustani', style: TextStyle(color: Colors.white)),
+                                        ),
+                                        TextButton(
+                                          onPressed: () async {
+                                            final userId = ref.read(currentUserProvider)?.id ?? '';
+                                            if (userId.isNotEmpty) {
+                                              await ref.read(gymRepositoryProvider).deleteCustomExercise(userId, ex.id);
+                                            }
+                                            if (context.mounted) {
+                                              Navigator.pop(context); // Close dialog
+                                              setState(() {}); // Rebuild sheet
+                                            }
+                                          },
+                                          child: const Text('Obriši', style: TextStyle(color: AppColors.error)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            const Icon(Icons.add, color: AppColors.primaryLight),
+                          ],
+                        ),
                         onTap: () {
                           onSelected(ex);
                           Navigator.pop(context);

@@ -18,11 +18,18 @@ import 'exercises_library_screen.dart';
 import 'exercise_detail_screen.dart';
 import '../../domain/entities/exercise.dart';
 
-class GymDashboardScreen extends ConsumerWidget {
+class GymDashboardScreen extends ConsumerStatefulWidget {
   const GymDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GymDashboardScreen> createState() => _GymDashboardScreenState();
+}
+
+class _GymDashboardScreenState extends ConsumerState<GymDashboardScreen> {
+  bool _showAiSplits = false;
+
+  @override
+  Widget build(BuildContext context) {
     final activeWorkout = ref.watch(activeWorkoutProvider);
     final templatesAsync = ref.watch(workoutTemplatesProvider);
     final historyAsync = ref.watch(workoutHistoryProvider);
@@ -105,23 +112,100 @@ class GymDashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Selector Tabs: Personal vs AI splits
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _showAiSplits = false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: !_showAiSplits ? AppColors.primary : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Osobni programi',
+                            style: AppTypography.label.copyWith(
+                              color: !_showAiSplits ? AppColors.primaryLight : AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _showAiSplits = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: _showAiSplits ? AppColors.secondary : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.auto_awesome, size: 14, color: AppColors.secondary),
+                              const SizedBox(width: 6),
+                              Text(
+                                'AI Programi',
+                                style: AppTypography.label.copyWith(
+                                  color: _showAiSplits ? AppColors.secondary : AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: AppSpacing.md),
+
               templatesAsync.when(
                 data: (templates) {
-                  if (templates.isEmpty) {
-                    return _buildEmptyState(
-                      'Nemaš spremljenih programa.',
-                      'Iskoristi naš AI generator za izradu savršenog splita treninga!',
-                      onPressed: () => _showAiSplitGenerator(context, ref),
-                      btnText: 'Generiraj AI Split',
-                    );
+                  final filteredTemplates = templates.where((t) => t.isAiGenerated == _showAiSplits).toList();
+
+                  if (filteredTemplates.isEmpty) {
+                    if (_showAiSplits) {
+                      return _buildEmptyState(
+                        'Nemaš generiranih AI programa.',
+                        'Iskoristi naš AI generator za izradu savršenog splita treninga!',
+                        onPressed: () => _showAiSplitGenerator(context, ref),
+                        btnText: 'Generiraj AI Split',
+                      );
+                    } else {
+                      return _buildEmptyState(
+                        'Nemaš spremljenih osobnih programa.',
+                        'Kreiraj svoj prvi program ručno!',
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const TemplateFormScreen()),
+                        ),
+                        btnText: 'Kreiraj program',
+                      );
+                    }
                   }
                   return ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: templates.length,
+                    itemCount: filteredTemplates.length,
                     itemBuilder: (context, index) {
-                      return _buildTemplateCard(context, ref, userId, templates[index]);
+                      return _buildTemplateCard(context, ref, userId, filteredTemplates[index]);
                     },
                   );
                 },

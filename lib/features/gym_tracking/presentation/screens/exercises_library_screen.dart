@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/gym_provider.dart';
 import 'exercise_detail_screen.dart';
 
@@ -28,6 +29,30 @@ class _ExercisesLibraryScreenState extends ConsumerState<ExercisesLibraryScreen>
     'Kardio',
     'Drugo'
   ];
+
+  void _showDeleteConfirmDialog(BuildContext context, String name, VoidCallback onDelete) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.backgroundCard,
+        title: const Text('Obriši vježbu?'),
+        content: Text('Jesi li siguran/na da želiš trajno obrisati vježbu "$name"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Odustani', style: TextStyle(color: Colors.white)),
+          ),
+          TextButton(
+            onPressed: () {
+              onDelete();
+              Navigator.pop(context);
+            },
+            child: const Text('Obriši', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,56 +139,75 @@ class _ExercisesLibraryScreenState extends ConsumerState<ExercisesLibraryScreen>
             // 3. Exercise List
             Expanded(
               child: filtered.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.fitness_center, size: 48, color: AppColors.textMuted),
-                          const SizedBox(height: 12),
-                          Text('Nema pronađenih vježbi.', style: AppTypography.label),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final ex = filtered[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          color: AppColors.backgroundCard,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: const BorderSide(color: AppColors.glassStroke),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            title: Text(ex.name, style: AppTypography.label),
-                            subtitle: Text(
-                              '${ex.muscleGroup} • ${ex.equipment}',
-                              style: AppTypography.bodySm.copyWith(color: AppColors.textMuted),
-                            ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios,
-                              size: 14,
-                              color: AppColors.textMuted,
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ExerciseDetailScreen(exercise: ex),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                   ? Center(
+                       child: Column(
+                         mainAxisAlignment: MainAxisAlignment.center,
+                         children: [
+                           const Icon(Icons.fitness_center, size: 48, color: AppColors.textMuted),
+                           const SizedBox(height: 12),
+                           Text('Nema pronađenih vježbi.', style: AppTypography.label),
+                         ],
+                       ),
+                     )
+                   : ListView.builder(
+                       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+                       itemCount: filtered.length,
+                       itemBuilder: (context, index) {
+                         final ex = filtered[index];
+                         return Card(
+                           margin: const EdgeInsets.only(bottom: 10),
+                           color: AppColors.backgroundCard,
+                           shape: RoundedRectangleBorder(
+                             borderRadius: BorderRadius.circular(12),
+                             side: const BorderSide(color: AppColors.glassStroke),
+                           ),
+                           child: ListTile(
+                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                             title: Text(ex.name, style: AppTypography.label),
+                             subtitle: Text(
+                               '${ex.muscleGroup} • ${ex.equipment}',
+                               style: AppTypography.bodySm.copyWith(color: AppColors.textMuted),
+                             ),
+                             trailing: Row(
+                               mainAxisSize: MainAxisSize.min,
+                               children: [
+                                 if (ex.id.startsWith('custom_')) ...[
+                                   IconButton(
+                                     icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                                     onPressed: () {
+                                       _showDeleteConfirmDialog(context, ex.name, () async {
+                                         final userId = ref.read(currentUserProvider)?.id ?? '';
+                                         if (userId.isNotEmpty) {
+                                           await ref.read(gymRepositoryProvider).deleteCustomExercise(userId, ex.id);
+                                         }
+                                       });
+                                     },
+                                   ),
+                                   const SizedBox(width: 4),
+                                 ],
+                                 const Icon(
+                                   Icons.arrow_forward_ios,
+                                   size: 14,
+                                   color: AppColors.textMuted,
+                                 ),
+                               ],
+                             ),
+                             onTap: () {
+                               Navigator.push(
+                                 context,
+                                 MaterialPageRoute(
+                                   builder: (context) => ExerciseDetailScreen(exercise: ex),
+                                 ),
+                               );
+                             },
+                           ),
+                         );
+                       },
+                     ),
+             ),
+           ],
+         ),
+       ),
+     );
+   }
+ }

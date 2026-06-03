@@ -86,6 +86,16 @@ class FirebaseGymRepository implements GymRepository {
   }
 
   @override
+  Future<void> deleteCustomExercise(String userId, String exerciseId) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('custom_exercises')
+        .doc(exerciseId)
+        .delete();
+  }
+
+  @override
   Stream<List<Exercise>> watchCustomExercises(String userId) {
     return _firestore
         .collection('users')

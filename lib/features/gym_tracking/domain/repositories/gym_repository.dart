@@ -15,5 +15,6 @@ abstract class GymRepository {
 
   // Custom Exercises
   Future<void> saveCustomExercise(String userId, Exercise exercise);
+  Future<void> deleteCustomExercise(String userId, String exerciseId);
   Stream<List<Exercise>> watchCustomExercises(String userId);
 }
