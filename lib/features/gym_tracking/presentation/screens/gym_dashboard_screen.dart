@@ -180,6 +180,7 @@ class _GymDashboardScreenState extends ConsumerState<GymDashboardScreen> {
                         'Iskoristi naš AI generator za izradu savršenog splita treninga!',
                         onPressed: () => _showAiSplitGenerator(context, ref),
                         btnText: 'Generiraj AI Split',
+                        height: 180,
                       );
                     } else {
                       return _buildEmptyState(
@@ -190,6 +191,7 @@ class _GymDashboardScreenState extends ConsumerState<GymDashboardScreen> {
                           MaterialPageRoute(builder: (context) => const TemplateFormScreen()),
                         ),
                         btnText: 'Kreiraj program',
+                        height: 180,
                       );
                     }
                   }
@@ -470,30 +472,44 @@ class _GymDashboardScreenState extends ConsumerState<GymDashboardScreen> {
     );
   }
 
-  Widget _buildEmptyState(String title, String subtitle, {VoidCallback? onPressed, String? btnText}) {
-    return GlassCard(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      child: Column(
-        children: [
-          const Icon(Icons.info_outline, size: 40, color: AppColors.textMuted),
-          const SizedBox(height: 8),
-          Text(title, style: AppTypography.label, textAlign: TextAlign.center),
-          const SizedBox(height: 4),
-          Text(subtitle, style: AppTypography.bodySm, textAlign: TextAlign.center),
-          if (onPressed != null && btnText != null) ...[
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                minimumSize: const Size(120, 44),
-              ),
-              onPressed: onPressed,
-              icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
-              label: Text(btnText, style: const TextStyle(color: Colors.white)),
+  Widget _buildEmptyState(
+    String title,
+    String subtitle, {
+    VoidCallback? onPressed,
+    String? btnText,
+    double? height,
+  }) {
+    final content = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.info_outline, size: 40, color: AppColors.textMuted),
+        const SizedBox(height: 8),
+        Text(title, style: AppTypography.label, textAlign: TextAlign.center),
+        const SizedBox(height: 4),
+        Text(subtitle, style: AppTypography.bodySm, textAlign: TextAlign.center),
+        if (onPressed != null && btnText != null) ...[
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+              minimumSize: const Size(120, 44),
             ),
-          ],
+            onPressed: onPressed,
+            icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+            label: Text(btnText, style: const TextStyle(color: Colors.white)),
+          ),
         ],
-      ),
+      ],
+    );
+
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: height != null
+          ? SizedBox(
+              height: height,
+              child: content,
+            )
+          : content,
     );
   }
 
