@@ -18,9 +18,6 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 }
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
-  Timer? _timer;
-  int _secondsElapsed = 0;
-  bool _isTimerPaused = false;
   Timer? _restTimer;
   int _restSecondsRemaining = 0;
   bool _showRestTimer = false;
@@ -28,26 +25,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   void initState() {
     super.initState();
-    // Pokreni tajmer
-    final session = ref.read(activeWorkoutProvider);
-    if (session != null) {
-      _secondsElapsed = DateTime.now().difference(session.startTime).inSeconds;
-    }
-    _startTimer();
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _secondsElapsed++;
-      });
-    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _restTimer?.cancel();
     super.dispose();
   }
@@ -110,6 +91,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       );
     }
 
+    final secondsElapsed = session.durationSeconds;
+    final isTimerPaused = session.isPaused;
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -119,10 +103,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             Row(
               children: [
                 Text(
-                  'Trajanje: ${_formatDuration(_secondsElapsed)}',
+                  'Trajanje: ${_formatDuration(secondsElapsed)}',
                   style: AppTypography.caption.copyWith(color: AppColors.secondary),
                 ),
-                if (_isTimerPaused) ...[
+                if (isTimerPaused) ...[
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -147,20 +131,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         actions: [
           IconButton(
             icon: Icon(
-              _isTimerPaused ? Icons.play_arrow : Icons.pause,
-              color: _isTimerPaused ? AppColors.success : AppColors.primaryLight,
+              isTimerPaused ? Icons.play_arrow : Icons.pause,
+              color: isTimerPaused ? AppColors.success : AppColors.primaryLight,
             ),
             onPressed: () {
-              setState(() {
-                _isTimerPaused = !_isTimerPaused;
-                if (_isTimerPaused) {
-                  _timer?.cancel();
-                } else {
-                  _startTimer();
-                }
-              });
+              ref.read(activeWorkoutProvider.notifier).togglePause();
             },
-            tooltip: _isTimerPaused ? 'Nastavi trening' : 'Pauziraj trening',
+            tooltip: isTimerPaused ? 'Nastavi trening' : 'Pauziraj trening',
           ),
           TextButton(
             onPressed: () => _showCancelDialog(context),

@@ -7,6 +7,7 @@ class WorkoutSession {
   final DateTime startTime;
   final DateTime? endTime;
   final int durationSeconds;
+  final bool isPaused;
   final List<WorkoutExercise> exercises;
   final String notes;
   final double totalVolume;
@@ -19,6 +20,7 @@ class WorkoutSession {
     required this.startTime,
     this.endTime,
     this.durationSeconds = 0,
+    this.isPaused = false,
     required this.exercises,
     this.notes = '',
     this.totalVolume = 0.0,
@@ -32,6 +34,7 @@ class WorkoutSession {
     DateTime? startTime,
     DateTime? endTime,
     int? durationSeconds,
+    bool? isPaused,
     List<WorkoutExercise>? exercises,
     String? notes,
     double? totalVolume,
@@ -44,6 +47,7 @@ class WorkoutSession {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       durationSeconds: durationSeconds ?? this.durationSeconds,
+      isPaused: isPaused ?? this.isPaused,
       exercises: exercises ?? this.exercises,
       notes: notes ?? this.notes,
       totalVolume: totalVolume ?? this.totalVolume,
@@ -59,6 +63,7 @@ class WorkoutSession {
       'startTime': startTime.toIso8601String(),
       'endTime': endTime?.toIso8601String(),
       'durationSeconds': durationSeconds,
+      'isPaused': isPaused,
       'exercises': exercises.map((e) => e.toJson()).toList(),
       'notes': notes,
       'totalVolume': totalVolume,
@@ -76,6 +81,7 @@ class WorkoutSession {
           ? DateTime.parse(json['endTime'] as String)
           : null,
       durationSeconds: json['durationSeconds'] as int? ?? 0,
+      isPaused: json['isPaused'] as bool? ?? false,
       exercises: (json['exercises'] as List<dynamic>?)
               ?.map((e) => WorkoutExercise.fromJson(e as Map<String, dynamic>))
               .toList() ??

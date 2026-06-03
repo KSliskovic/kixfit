@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../domain/entities/workout_session.dart';
@@ -14,9 +15,30 @@ final activeWorkoutProvider = NotifierProvider<ActiveWorkoutNotifier, WorkoutSes
 });
 
 class ActiveWorkoutNotifier extends Notifier<WorkoutSession?> {
+  Timer? _bgTimer;
+
   @override
   WorkoutSession? build() {
+    ref.onDispose(() {
+      _bgTimer?.cancel();
+    });
     return null;
+  }
+
+  void _startTimer() {
+    _bgTimer?.cancel();
+    _bgTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (state != null && !state!.isPaused) {
+        state = state!.copyWith(
+          durationSeconds: state!.durationSeconds + 1,
+        );
+      }
+    });
+  }
+
+  void togglePause() {
+    if (state == null) return;
+    state = state!.copyWith(isPaused: !state!.isPaused);
   }
 
   void startWorkout({WorkoutTemplate? template}) {
@@ -27,6 +49,8 @@ class ActiveWorkoutNotifier extends Notifier<WorkoutSession?> {
       templateId: template?.id,
       name: template != null ? template.name : 'Slobodni Trening',
       startTime: DateTime.now(),
+      durationSeconds: 0,
+      isPaused: false,
       exercises: template?.exercises.map((e) {
             // Kopiramo vježbe i resetiramo setove da ne budu označeni kao completed
             return e.copyWith(
@@ -36,6 +60,7 @@ class ActiveWorkoutNotifier extends Notifier<WorkoutSession?> {
           }).toList() ??
           [],
     );
+    _startTimer();
   }
 
   void addExercise(Exercise exercise) {
@@ -153,7 +178,7 @@ class ActiveWorkoutNotifier extends Notifier<WorkoutSession?> {
       }
     }
 
-    final durationSeconds = DateTime.now().difference(state!.startTime).inSeconds;
+    final durationSeconds = state!.durationSeconds;
     final durationMinutes = durationSeconds / 60.0;
     
     // Izračunaj kalorije
@@ -172,6 +197,7 @@ class ActiveWorkoutNotifier extends Notifier<WorkoutSession?> {
 
     try {
       await ref.read(gymRepositoryProvider).saveSession(user.id, finishedSession);
+      _bgTimer?.cancel();
       state = null; // Reset nakon uspješnog spremanja
     } catch (e) {
       rethrow;
@@ -179,6 +205,7 @@ class ActiveWorkoutNotifier extends Notifier<WorkoutSession?> {
   }
   
   void cancelWorkout() {
+    _bgTimer?.cancel();
     state = null;
   }
 }

@@ -14,6 +14,31 @@ void showExercisePicker(
   Function(Exercise) onSelected,
 ) {
   String searchQuery = '';
+  String selectedMuscle = 'Sve';
+  String selectedEquipment = 'Sve';
+
+  final List<String> muscles = [
+    'Sve',
+    'Prsa',
+    'Leđa',
+    'Ramena',
+    'Noge',
+    'Ruke',
+    'Trbuh',
+    'Kardio',
+    'Drugo'
+  ];
+
+  final List<String> equipments = [
+    'Sve',
+    'Barbell',
+    'Dumbbell',
+    'Machine',
+    'Cable',
+    'Bodyweight',
+    'Kettlebell',
+    'Other'
+  ];
   
   showModalBottomSheet(
     context: context,
@@ -27,8 +52,13 @@ void showExercisePicker(
         final exercises = ref.watch(allExercisesProvider);
         final filtered = exercises.where((ex) {
           final query = searchQuery.toLowerCase();
-          return ex.name.toLowerCase().contains(query) ||
+          final matchesSearch = ex.name.toLowerCase().contains(query) ||
               ex.muscleGroup.toLowerCase().contains(query);
+          final matchesMuscle = selectedMuscle == 'Sve' ||
+              ex.muscleGroup.toLowerCase() == selectedMuscle.toLowerCase();
+          final matchesEquipment = selectedEquipment == 'Sve' ||
+              ex.equipment.toLowerCase() == selectedEquipment.toLowerCase();
+          return matchesSearch && matchesMuscle && matchesEquipment;
         }).toList();
 
         return DraggableScrollableSheet(
@@ -68,6 +98,85 @@ void showExercisePicker(
                   ],
                 ),
                 const SizedBox(height: 12),
+                
+                // Muscle group chips
+                SizedBox(
+                  height: 36,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: muscles.length,
+                    itemBuilder: (context, index) {
+                      final muscle = muscles[index];
+                      final isSelected = selectedMuscle == muscle;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: ChoiceChip(
+                          label: Text(muscle),
+                          selected: isSelected,
+                          selectedColor: AppColors.primary,
+                          backgroundColor: AppColors.glassFill,
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            side: BorderSide(
+                              color: isSelected ? AppColors.primary : AppColors.glassStroke,
+                            ),
+                          ),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => selectedMuscle = muscle);
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Equipment chips
+                SizedBox(
+                  height: 36,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: equipments.length,
+                    itemBuilder: (context, index) {
+                      final eq = equipments[index];
+                      final isSelected = selectedEquipment == eq;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: ChoiceChip(
+                          label: Text(eq),
+                          selected: isSelected,
+                          selectedColor: AppColors.secondary,
+                          backgroundColor: AppColors.glassFill,
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            side: BorderSide(
+                              color: isSelected ? AppColors.secondary : AppColors.glassStroke,
+                            ),
+                          ),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => selectedEquipment = eq);
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
