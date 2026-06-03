@@ -154,7 +154,10 @@ class GymDashboardScreen extends ConsumerWidget {
             ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              minimumSize: const Size(80, 36),
+            ),
             onPressed: () => context.push('/gym/active'),
             child: const Text('Nastavi', style: TextStyle(color: Colors.white)),
           ),
@@ -222,6 +225,7 @@ class GymDashboardScreen extends ConsumerWidget {
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary.withOpacity(0.8),
+                  minimumSize: const Size(100, 40),
                 ),
                 onPressed: () {
                   ref.read(activeWorkoutProvider.notifier).startWorkout(template: template);
@@ -316,7 +320,10 @@ class GymDashboardScreen extends ConsumerWidget {
           if (onPressed != null && btnText != null) ...[
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.secondary,
+                minimumSize: const Size(120, 44),
+              ),
               onPressed: onPressed,
               icon: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
               label: Text(btnText, style: const TextStyle(color: Colors.white)),
