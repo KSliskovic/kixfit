@@ -120,9 +120,6 @@ class DashboardScreen extends ConsumerWidget {
             ),
             child: _buildMacroSection(ref, profile, totalCalories, targetCals, totalProtein, totalCarbs, totalFat),
           ),
-          const SizedBox(height: AppSpacing.md),
-          
-          _buildAIRecommendationButton(context, totalCalories, totalProtein, totalCarbs, totalFat),
           const SizedBox(height: AppSpacing.xl),
           
           _buildWaterSection(context, ref, profile, userId),
@@ -395,53 +392,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAIRecommendationButton(BuildContext context, int calories, double protein, double carbs, double fat) {
-    return GestureDetector(
-      onTap: () => context.push('/recommendations', extra: {
-        'calories': calories,
-        'protein': protein,
-        'carbs': carbs,
-        'fat': fat,
-      }),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primary.withOpacity(0.8),
-              AppColors.secondary.withOpacity(0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
-            const SizedBox(width: 12),
-            Text(
-              'Što da pojedem sljedeće?',
-              style: AppTypography.label.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildMacroSection(WidgetRef ref, UserProfile? profile, int total, int target, double p, double c, double f) {
     final displayMode = ref.watch(dashboardDisplayModeProvider);
@@ -600,7 +551,9 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          amount >= targetWater ? 'Odlično! Hidriran si.' : 'Još malo do cilja!',
+                          amount >= targetWater 
+                              ? (profile?.gender == 'Žensko' ? 'Odlično! Hidrirana si.' : 'Odlično! Hidriran si.') 
+                              : 'Još malo do cilja!',
                           style: AppTypography.caption,
                         ),
                       ],

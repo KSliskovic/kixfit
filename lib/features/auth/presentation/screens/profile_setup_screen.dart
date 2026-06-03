@@ -95,6 +95,15 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       );
 
       await ref.read(profileRepositoryProvider).saveProfile(profile);
+      
+      // Sačekaj malo da Firestore stream pošalje novi podatak i Riverpod ga uhvati
+      // kako nas router ne bi vratio nazad na profile-setup zbog null profila
+      int retries = 0;
+      while (ref.read(userProfileProvider).value == null && retries < 20) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        retries++;
+      }
+
       if (mounted) context.go('/dashboard');
     } catch (e) {
       if (mounted) {

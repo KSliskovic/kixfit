@@ -140,6 +140,9 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileProvider).value;
+    final isFemale = profile?.gender == 'Žensko';
+
     return Scaffold(
       appBar: AppBar(title: const Text('AI Trener - Unos')),
       body: Container(
@@ -150,7 +153,7 @@ class _FoodEntryScreenState extends ConsumerState<FoodEntryScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Šta si danas pojeo?',
+                isFemale ? 'Šta si danas pojela?' : 'Šta si danas pojeo?',
                 style: AppTypography.h2,
                 textAlign: TextAlign.center,
               ),

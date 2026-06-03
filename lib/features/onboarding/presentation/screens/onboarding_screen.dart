@@ -24,7 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       icon: Icons.auto_awesome,
     ),
     OnboardingData(
-      title: 'Samo reci\nšta si pojeo',
+      title: 'Samo reci\nšta si pojeo/la',
       subtitle: 'Bez kucanja, bez traženja. Samo glasovno unesi obrok i prepusti AI-u ostalo.',
       icon: Icons.mic,
     ),

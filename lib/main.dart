@@ -50,12 +50,10 @@ void main() async {
 }
 
 final _routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
-
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: '/dashboard',
     redirect: (context, state) {
-      final authValue = authState.value;
+      final authValue = ref.read(authStateProvider).value;
       final isLoggedIn = authValue != null;
       
       // Definiramo rute koje su dostupne bez prijave
@@ -132,6 +130,11 @@ final _routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.listen(authStateProvider, (_, __) => router.refresh());
+  ref.listen(userProfileProvider, (_, __) => router.refresh());
+
+  return router;
 });
 
 class KixFitApp extends ConsumerWidget {
