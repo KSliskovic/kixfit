@@ -6,6 +6,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../../features/auth/domain/entities/user_profile.dart';
 import '../../features/food_tracking/domain/entities/nutrition_info.dart';
 import '../../features/food_tracking/domain/entities/meal_recommendation.dart';
+import '../../features/gym_tracking/domain/entities/workout_template.dart';
 import 'ai_service.dart';
 import '../../core/config/secrets.dart';
 
@@ -241,5 +242,106 @@ class GeminiAIService implements AIService {
       debugPrint('Error analyzing restaurants: $e');
       return places;
     }
+  }
+
+  @override
+  Future<List<WorkoutTemplate>> generateWorkoutTemplates({
+    required UserProfile profile,
+    required int daysPerWeek,
+    required String equipment,
+    required String focus,
+  }) async {
+    final calorieTarget = profile.dailyCaloriesTarget;
+    final goal = profile.goals;
+    final healthConditions = profile.medicalConditions;
+
+    final prompt = """
+    You are an expert fitness coach and personal trainer.
+    Based on the user's profile and goals, create a complete workout split program with exactly $daysPerWeek training days.
+
+    User Profile:
+    - Age: ${profile.age}
+    - Gender: ${profile.gender}
+    - Weight: ${profile.weight} kg
+    - Height: ${profile.height} cm
+    - Calorie Target: $calorieTarget kcal/day (Goal: $goal)
+    - Medical/Health Conditions: $healthConditions
+
+    User Preferences for this program:
+    - Frequency: $daysPerWeek days per week
+    - Available Equipment: $equipment
+    - Workout Focus: $focus
+
+    TASK:
+    Generate a full workout split matching the requested frequency. For example:
+    - 3 days: Push / Pull / Legs OR Full Body
+    - 4 days: Upper / Lower OR Push / Pull / Arms / Legs
+    - 5 days: Bro Split (Chest, Back, Shoulders, Legs, Arms) OR Push/Pull/Legs/Upper/Lower
+    Choose the most optimal split for their fitness goal and available equipment.
+    
+    IMPORTANT: Optimize the volume (number of sets and reps) based on their nutritional goals:
+    - If they are in a calorie deficit (e.g. for weight loss/gubitak kilograma), focus on maintaining strength with moderate volume (e.g., 3 sets per exercise, intensity over volume).
+    - If they are in a calorie surplus (e.g. muscle gain/dobivanje mišićne mase), design a higher-volume hypertrophy program (e.g., 3-4 sets per exercise with higher repetition ranges).
+
+    ALL text values (names, descriptions, exercise names, muscle group names, notes) MUST be in the Croatian language.
+
+    Return a JSON array of objects representing Workout Templates (training days).
+    Each training day object MUST match the following JSON structure exactly:
+    
+    [
+      {
+        "id": "day_1",
+        "name": "Dan 1: Push (Prsa, Ramena, Triceps)",
+        "description": "Fokus na potiskivačke mišiće uz umjeren volumen.",
+        "isAiGenerated": true,
+        "exercises": [
+          {
+            "id": "ex_1",
+            "exerciseId": "bench_press",
+            "exerciseName": "Potisak s ravne klupe (Bench Press)",
+            "muscleGroup": "Prsa",
+            "notes": "Kontroliraj spuštanje šipke.",
+            "sets": [
+              {
+                "id": "set_1",
+                "reps": 10,
+                "weight": 0.0,
+                "isCompleted": false,
+                "type": "normal"
+              },
+              {
+                "id": "set_2",
+                "reps": 10,
+                "weight": 0.0,
+                "isCompleted": false,
+                "type": "normal"
+              },
+              {
+                "id": "set_3",
+                "reps": 8,
+                "weight": 0.0,
+                "isCompleted": false,
+                "type": "normal"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+
+    Return ONLY the raw JSON array. Do not include markdown code block formatting or any additional text.
+    """;
+
+    final response = await _model.generateContent([Content.text(prompt)]);
+    if (response.text == null) throw Exception('AI did not return a workout program.');
+
+    String cleanedText = response.text!.trim();
+    if (cleanedText.startsWith('```')) {
+      cleanedText = cleanedText.replaceAll(RegExp(r'^```(json)?\n?'), '');
+      cleanedText = cleanedText.replaceAll(RegExp(r'\n?```$'), '');
+    }
+
+    final List<dynamic> jsonList = jsonDecode(cleanedText) as List<dynamic>;
+    return jsonList.map((e) => WorkoutTemplate.fromJson(e as Map<String, dynamic>)).toList();
   }
 }

@@ -18,6 +18,8 @@ import 'features/statistics/presentation/screens/stats_screen.dart';
 import 'features/restaurants/presentation/screens/restaurant_search_screen.dart';
 import 'features/food_tracking/presentation/screens/meal_detail_screen.dart';
 import 'features/food_tracking/presentation/screens/meal_library_screen.dart';
+import 'features/gym_tracking/presentation/screens/gym_dashboard_screen.dart';
+import 'features/gym_tracking/presentation/screens/active_workout_screen.dart';
 import 'features/food_tracking/domain/entities/nutrition_info.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/data/repositories/profile_repository.dart';
@@ -96,6 +98,8 @@ final _routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
       GoRoute(path: '/profile-setup', builder: (context, state) => const ProfileSetupScreen()),
       GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
+      GoRoute(path: '/gym', builder: (context, state) => const GymDashboardScreen()),
+      GoRoute(path: '/gym/active', builder: (context, state) => const ActiveWorkoutScreen()),
       GoRoute(
         path: '/food-entry', 
         builder: (context, state) {

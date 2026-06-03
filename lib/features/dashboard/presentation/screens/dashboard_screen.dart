@@ -332,6 +332,11 @@ class DashboardScreen extends ConsumerWidget {
               tooltip: displayMode == DashboardDisplayMode.consumed ? 'Prikaži preostalo' : 'Prikaži uneseno',
             ),
             IconButton(
+              onPressed: () => context.push('/gym'),
+              icon: const Icon(Icons.fitness_center, color: AppColors.primaryLight),
+              tooltip: 'Trening (Gym)',
+            ),
+            IconButton(
               onPressed: () => context.push('/restaurants'),
               icon: const Icon(Icons.restaurant_menu, color: AppColors.primaryLight),
               tooltip: 'Pronađi fit restorane',
