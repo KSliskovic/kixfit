@@ -324,7 +324,7 @@ class _TemplateExerciseItemState extends State<TemplateExerciseItem> {
             padding: const EdgeInsets.only(bottom: 8.0),
             child: Row(
               children: [
-                const SizedBox(width: 40, child: Text('SERIJA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted))),
+                const SizedBox(width: 50, child: Text('SERIJA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted))),
                 const Expanded(
                   child: Text('TEŽINA (kg)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMuted), textAlign: TextAlign.center),
                 ),
@@ -346,7 +346,7 @@ class _TemplateExerciseItemState extends State<TemplateExerciseItem> {
                 child: Row(
                   children: [
                     SizedBox(
-                      width: 40,
+                      width: 50,
                       child: Center(
                         child: CircleAvatar(
                           radius: 12,
@@ -362,7 +362,7 @@ class _TemplateExerciseItemState extends State<TemplateExerciseItem> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: TextFormField(
-                          initialValue: set.weight == 0 ? '' : set.weight.toString(),
+                          initialValue: set.weight == 0 ? '' : (set.weight % 1 == 0 ? set.weight.toInt().toString() : set.weight.toString()),
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           textAlign: TextAlign.center,
                           decoration: InputDecoration(

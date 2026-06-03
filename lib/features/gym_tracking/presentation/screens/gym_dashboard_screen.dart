@@ -561,10 +561,11 @@ class _GymDashboardScreenState extends ConsumerState<GymDashboardScreen> {
             right: AppSpacing.lg,
             bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               Center(
                 child: Container(
                   width: 40,
@@ -774,6 +775,7 @@ class _GymDashboardScreenState extends ConsumerState<GymDashboardScreen> {
                 ),
               ],
             ],
+          ),
           ),
         ),
       ),

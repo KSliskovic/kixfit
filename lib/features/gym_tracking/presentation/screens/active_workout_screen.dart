@@ -204,7 +204,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             // Sets Table Header
             Row(
               children: [
-                SizedBox(width: 40, child: Text('SERIJA', style: AppTypography.caption, textAlign: TextAlign.center)),
+                SizedBox(width: 50, child: Text('SERIJA', style: AppTypography.caption, textAlign: TextAlign.center)),
                 Expanded(child: Text('KG', style: AppTypography.caption, textAlign: TextAlign.center)),
                 Expanded(child: Text('REPS', style: AppTypography.caption, textAlign: TextAlign.center)),
                 SizedBox(width: 50, child: Text('GOTOVO', style: AppTypography.caption, textAlign: TextAlign.center)),
@@ -219,7 +219,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               itemCount: ex.sets.length,
               itemBuilder: (context, sIndex) {
                 final set = ex.sets[sIndex];
-                return _buildSetRow(ex, set, sIndex);
+                return ActiveWorkoutSetRow(
+                  key: Key(set.id),
+                  exercise: ex,
+                  set: set,
+                  index: sIndex,
+                  onSetCompleted: _startRestTimer,
+                );
               },
             ),
 
@@ -231,117 +237,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               },
               icon: const Icon(Icons.add, size: 16, color: AppColors.primaryLight),
               label: Text('Dodaj seriju', style: AppTypography.label.copyWith(color: AppColors.primaryLight, fontSize: 13)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSetRow(WorkoutExercise ex, WorkoutSet set, int index) {
-    final weightController = TextEditingController(text: set.weight > 0 ? set.weight.toString() : '');
-    final repsController = TextEditingController(text: set.reps > 0 ? set.reps.toString() : '');
-
-    // Postavljanje kursora na kraj unosa
-    weightController.selection = TextSelection.fromPosition(TextPosition(offset: weightController.text.length));
-    repsController.selection = TextSelection.fromPosition(TextPosition(offset: repsController.text.length));
-
-    return Dismissible(
-      key: Key(set.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: AppColors.error,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (_) {
-        ref.read(activeWorkoutProvider.notifier).removeSet(ex.id, set.id);
-      },
-      child: Container(
-        color: set.isCompleted ? AppColors.success.withOpacity(0.08) : Colors.transparent,
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
-        child: Row(
-          children: [
-            // Set Number
-            SizedBox(
-              width: 40,
-              child: Center(
-                child: Text(
-                  '${index + 1}',
-                  style: AppTypography.label.copyWith(
-                    color: set.isCompleted ? AppColors.success : Colors.white,
-                  ),
-                ),
-              ),
-            ),
-
-            // Weight input
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: TextField(
-                  controller: weightController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  textAlign: TextAlign.center,
-                  style: AppTypography.body,
-                  decoration: InputDecoration(
-                    hintText: '0',
-                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                  ),
-                  onChanged: (val) {
-                    final weight = double.tryParse(val) ?? 0.0;
-                    ref.read(activeWorkoutProvider.notifier).updateSet(ex.id, set.id, weight: weight);
-                  },
-                ),
-              ),
-            ),
-
-            // Reps input
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: TextField(
-                  controller: repsController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.body,
-                  decoration: InputDecoration(
-                    hintText: '0',
-                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                  ),
-                  onChanged: (val) {
-                    final reps = int.tryParse(val) ?? 0;
-                    ref.read(activeWorkoutProvider.notifier).updateSet(ex.id, set.id, reps: reps);
-                  },
-                ),
-              ),
-            ),
-
-            // Checkbox
-            SizedBox(
-              width: 50,
-              child: Center(
-                child: IconButton(
-                  icon: Icon(
-                    set.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
-                    color: set.isCompleted ? AppColors.success : AppColors.textMuted,
-                  ),
-                  onPressed: () {
-                    final nextVal = !set.isCompleted;
-                    ref.read(activeWorkoutProvider.notifier).updateSet(
-                          ex.id,
-                          set.id,
-                          isCompleted: nextVal,
-                        );
-                    if (nextVal) {
-                      _startRestTimer();
-                    }
-                  },
-                ),
-              ),
             ),
           ],
         ),
@@ -540,6 +435,179 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ActiveWorkoutSetRow extends ConsumerStatefulWidget {
+  final WorkoutExercise exercise;
+  final WorkoutSet set;
+  final int index;
+  final VoidCallback onSetCompleted;
+
+  const ActiveWorkoutSetRow({
+    super.key,
+    required this.exercise,
+    required this.set,
+    required this.index,
+    required this.onSetCompleted,
+  });
+
+  @override
+  ConsumerState<ActiveWorkoutSetRow> createState() => _ActiveWorkoutSetRowState();
+}
+
+class _ActiveWorkoutSetRowState extends ConsumerState<ActiveWorkoutSetRow> {
+  late TextEditingController _weightController;
+  late TextEditingController _repsController;
+
+  @override
+  void initState() {
+    super.initState();
+    final weightStr = widget.set.weight > 0
+        ? (widget.set.weight % 1 == 0 ? widget.set.weight.toInt().toString() : widget.set.weight.toString())
+        : '';
+    final repsStr = widget.set.reps > 0 ? widget.set.reps.toString() : '';
+    _weightController = TextEditingController(text: weightStr);
+    _repsController = TextEditingController(text: repsStr);
+  }
+
+  @override
+  void didUpdateWidget(covariant ActiveWorkoutSetRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if the weight in the state differs from the currently parsed input text
+    final currentInputWeight = double.tryParse(_weightController.text) ?? 0.0;
+    if (currentInputWeight != widget.set.weight) {
+      final weightStr = widget.set.weight > 0
+          ? (widget.set.weight % 1 == 0 ? widget.set.weight.toInt().toString() : widget.set.weight.toString())
+          : '';
+      _weightController.text = weightStr;
+      _weightController.selection = TextSelection.fromPosition(TextPosition(offset: _weightController.text.length));
+    }
+
+    // Check if reps differ
+    final currentInputReps = int.tryParse(_repsController.text) ?? 0;
+    if (currentInputReps != widget.set.reps) {
+      final repsStr = widget.set.reps > 0 ? widget.set.reps.toString() : '';
+      _repsController.text = repsStr;
+      _repsController.selection = TextSelection.fromPosition(TextPosition(offset: _repsController.text.length));
+    }
+  }
+
+  @override
+  void dispose() {
+    _weightController.dispose();
+    _repsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final set = widget.set;
+    final ex = widget.exercise;
+    final index = widget.index;
+
+    return Dismissible(
+      key: Key(set.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: AppColors.error,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) {
+        ref.read(activeWorkoutProvider.notifier).removeSet(ex.id, set.id);
+      },
+      child: Container(
+        color: set.isCompleted ? AppColors.success.withOpacity(0.08) : Colors.transparent,
+        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        child: Row(
+          children: [
+            // Set Number
+            SizedBox(
+              width: 50,
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: AppTypography.label.copyWith(
+                    color: set.isCompleted ? AppColors.success : Colors.white,
+                  ),
+                ),
+              ),
+            ),
+
+            // Weight input
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: TextField(
+                  controller: _weightController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.body,
+                  decoration: InputDecoration(
+                    hintText: '0',
+                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  onChanged: (val) {
+                    final weight = double.tryParse(val) ?? 0.0;
+                    ref.read(activeWorkoutProvider.notifier).updateSet(ex.id, set.id, weight: weight);
+                  },
+                ),
+              ),
+            ),
+
+            // Reps input
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: TextField(
+                  controller: _repsController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.body,
+                  decoration: InputDecoration(
+                    hintText: '0',
+                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  onChanged: (val) {
+                    final reps = int.tryParse(val) ?? 0;
+                    ref.read(activeWorkoutProvider.notifier).updateSet(ex.id, set.id, reps: reps);
+                  },
+                ),
+              ),
+            ),
+
+            // Checkbox
+            SizedBox(
+              width: 50,
+              child: Center(
+                child: IconButton(
+                  icon: Icon(
+                    set.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
+                    color: set.isCompleted ? AppColors.success : AppColors.textMuted,
+                  ),
+                  onPressed: () {
+                    final nextVal = !set.isCompleted;
+                    ref.read(activeWorkoutProvider.notifier).updateSet(
+                          ex.id,
+                          set.id,
+                          isCompleted: nextVal,
+                        );
+                    if (nextVal) {
+                      widget.onSetCompleted();
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
