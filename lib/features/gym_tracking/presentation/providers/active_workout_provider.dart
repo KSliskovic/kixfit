@@ -132,10 +132,10 @@ class ActiveWorkoutNotifier extends Notifier<WorkoutSession?> {
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 
-    // Filter out incomplete sets
+    // Automatically set all sets as completed when finishing so nothing is lost
     final cleanExercises = state!.exercises.map((e) {
       return e.copyWith(
-        sets: e.sets.where((s) => s.isCompleted).toList(),
+        sets: e.sets.map((s) => s.copyWith(isCompleted: true)).toList(),
       );
     }).where((e) => e.sets.isNotEmpty).toList();
 

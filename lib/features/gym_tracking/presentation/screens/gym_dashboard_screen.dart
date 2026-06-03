@@ -14,6 +14,9 @@ import '../providers/gym_provider.dart';
 import '../providers/active_workout_provider.dart';
 import '../../../food_tracking/presentation/providers/meal_provider.dart'; // contains aiServiceProvider
 import 'template_form_screen.dart';
+import 'exercises_library_screen.dart';
+import 'exercise_detail_screen.dart';
+import '../../domain/entities/exercise.dart';
 
 class GymDashboardScreen extends ConsumerWidget {
   const GymDashboardScreen({super.key});
@@ -29,6 +32,14 @@ class GymDashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Gym Trening'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.menu_book_outlined, color: AppColors.primaryLight),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ExercisesLibraryScreen()),
+            ),
+            tooltip: 'Biblioteka vježbi',
+          ),
           IconButton(
             icon: const Icon(Icons.auto_awesome, color: AppColors.secondary),
             onPressed: () => _showAiSplitGenerator(context, ref),
@@ -74,22 +85,21 @@ class GymDashboardScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Moji programi (Splitovi)', style: AppTypography.h3),
+                  Text('Moji programi', style: AppTypography.h3),
                   Row(
                     children: [
-                      TextButton.icon(
+                      IconButton(
                         onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const TemplateFormScreen()),
                         ),
-                        icon: const Icon(Icons.add, size: 16, color: AppColors.primaryLight),
-                        label: Text('Novi', style: AppTypography.label.copyWith(color: AppColors.primaryLight)),
+                        icon: const Icon(Icons.add, color: AppColors.primaryLight),
+                        tooltip: 'Novi program',
                       ),
-                      const SizedBox(width: 4),
-                      TextButton.icon(
+                      IconButton(
                         onPressed: () => _showAiSplitGenerator(context, ref),
-                        icon: const Icon(Icons.auto_awesome, size: 16, color: AppColors.secondary),
-                        label: Text('AI Split', style: AppTypography.label.copyWith(color: AppColors.secondary)),
+                        icon: const Icon(Icons.auto_awesome, color: AppColors.secondary),
+                        tooltip: 'Generiraj AI Split',
                       ),
                     ],
                   ),
@@ -208,19 +218,41 @@ class GymDashboardScreen extends ConsumerWidget {
         children: [
           ...template.exercises.map((e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
+                child: InkWell(
+                  onTap: () {
+                    final ex = ref.read(allExercisesProvider).firstWhere(
+                      (element) => element.name.toLowerCase() == e.exerciseName.toLowerCase(),
+                      orElse: () => Exercise(id: e.exerciseId, name: e.exerciseName, muscleGroup: e.muscleGroup),
+                    );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ExerciseDetailScreen(exercise: ex)),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text('${e.sets.length}S', style: AppTypography.caption.copyWith(color: AppColors.primaryLight)),
                       ),
-                      child: Text('${e.sets.length}S', style: AppTypography.caption.copyWith(color: AppColors.primaryLight)),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(e.exerciseName, style: AppTypography.bodySm)),
-                  ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          e.exerciseName,
+                          style: AppTypography.bodySm.copyWith(
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primaryLight.withOpacity(0.4),
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, size: 14, color: AppColors.textMuted),
+                    ],
+                  ),
                 ),
               )),
           const Divider(color: AppColors.glassStroke, height: 24),
@@ -311,10 +343,38 @@ class GymDashboardScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           // Exercises Summary
           ...session.exercises.map((e) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2.0),
-                child: Text(
-                  '• ${e.exerciseName} (${e.sets.length} serija)',
-                  style: AppTypography.caption,
+                padding: const EdgeInsets.symmetric(vertical: 3.0),
+                child: InkWell(
+                  onTap: () {
+                    final ex = ref.read(allExercisesProvider).firstWhere(
+                      (element) => element.name.toLowerCase() == e.exerciseName.toLowerCase(),
+                      orElse: () => Exercise(id: e.exerciseId, name: e.exerciseName, muscleGroup: e.muscleGroup),
+                    );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ExerciseDetailScreen(exercise: ex)),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.circle, size: 6, color: AppColors.primaryLight),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${e.exerciseName} (${e.sets.length} serija)',
+                            style: AppTypography.caption.copyWith(
+                              decoration: TextDecoration.underline,
+                              decorationColor: AppColors.primaryLight.withOpacity(0.4),
+                            ),
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, size: 12, color: AppColors.textMuted),
+                      ],
+                    ),
+                  ),
                 ),
               )),
         ],
@@ -457,8 +517,7 @@ class GymDashboardScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                 Row(
                   children: [2, 3, 4, 5].map((d) {
                     final isSelected = days == d;
                     String emoji = '⚡';
@@ -466,16 +525,35 @@ class GymDashboardScreen extends ConsumerWidget {
                     if (d == 3) emoji = '⚡';
                     if (d == 4) emoji = '💪';
                     if (d == 5) emoji = '🔥';
-                    return InkWell(
-                      onTap: () => setState(() => days = d),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.secondary : AppColors.glassFill,
+                    return Expanded(
+                      child: Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        color: isSelected ? AppColors.secondary : AppColors.glassFill,
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: isSelected ? AppColors.secondary : AppColors.glassStroke),
+                          side: BorderSide(color: isSelected ? AppColors.secondary : AppColors.glassStroke),
                         ),
-                        child: Text('$emoji $d dana', style: AppTypography.body),
+                        child: InkWell(
+                          onTap: () => setState(() => days = d),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(emoji, style: const TextStyle(fontSize: 16)),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$d dana',
+                                  style: AppTypography.caption.copyWith(
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   }).toList(),

@@ -20,6 +20,10 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Timer? _timer;
   int _secondsElapsed = 0;
+  bool _isTimerPaused = false;
+  Timer? _restTimer;
+  int _restSecondsRemaining = 0;
+  bool _showRestTimer = false;
 
   @override
   void initState() {
@@ -29,6 +33,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     if (session != null) {
       _secondsElapsed = DateTime.now().difference(session.startTime).inSeconds;
     }
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         _secondsElapsed++;
@@ -39,7 +48,42 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _restTimer?.cancel();
     super.dispose();
+  }
+
+  void _startRestTimer() {
+    _restTimer?.cancel();
+    setState(() {
+      _restSecondsRemaining = 90; // Default 90 seconds
+      _showRestTimer = true;
+    });
+    _restTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_restSecondsRemaining <= 1) {
+        _stopRestTimer();
+      } else {
+        setState(() {
+          _restSecondsRemaining--;
+        });
+      }
+    });
+  }
+
+  void _stopRestTimer() {
+    _restTimer?.cancel();
+    setState(() {
+      _showRestTimer = false;
+      _restSecondsRemaining = 0;
+    });
+  }
+
+  void _adjustRestTime(int seconds) {
+    setState(() {
+      _restSecondsRemaining = (_restSecondsRemaining + seconds).clamp(0, 600);
+      if (_restSecondsRemaining == 0) {
+        _stopRestTimer();
+      }
+    });
   }
 
   String _formatDuration(int seconds) {
@@ -72,13 +116,52 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(session.name, style: AppTypography.labelLg),
-            Text(
-              'Trajanje: ${_formatDuration(_secondsElapsed)}',
-              style: AppTypography.caption.copyWith(color: AppColors.secondary),
+            Row(
+              children: [
+                Text(
+                  'Trajanje: ${_formatDuration(_secondsElapsed)}',
+                  style: AppTypography.caption.copyWith(color: AppColors.secondary),
+                ),
+                if (_isTimerPaused) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'PAUZIRANO',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.error,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(
+              _isTimerPaused ? Icons.play_arrow : Icons.pause,
+              color: _isTimerPaused ? AppColors.success : AppColors.primaryLight,
+            ),
+            onPressed: () {
+              setState(() {
+                _isTimerPaused = !_isTimerPaused;
+                if (_isTimerPaused) {
+                  _timer?.cancel();
+                } else {
+                  _startTimer();
+                }
+              });
+            },
+            tooltip: _isTimerPaused ? 'Nastavi trening' : 'Pauziraj trening',
+          ),
           TextButton(
             onPressed: () => _showCancelDialog(context),
             child: const Text('Odustani', style: TextStyle(color: AppColors.error)),
@@ -99,6 +182,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                 },
               ),
             ),
+            _buildRestTimerBanner(),
             _buildBottomActionBar(context),
           ],
         ),
@@ -269,11 +353,15 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                     color: set.isCompleted ? AppColors.success : AppColors.textMuted,
                   ),
                   onPressed: () {
+                    final nextVal = !set.isCompleted;
                     ref.read(activeWorkoutProvider.notifier).updateSet(
                           ex.id,
                           set.id,
-                          isCompleted: !set.isCompleted,
+                          isCompleted: nextVal,
                         );
+                    if (nextVal) {
+                      _startRestTimer();
+                    }
                   },
                 ),
               ),
@@ -397,5 +485,85 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     showExercisePicker(context, ref, (exercise) {
       ref.read(activeWorkoutProvider.notifier).addExercise(exercise);
     });
+  }
+
+  Widget _buildRestTimerBanner() {
+    if (!_showRestTimer) return const SizedBox.shrink();
+
+    final progress = _restSecondsRemaining / 90.0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundCard.withOpacity(0.95),
+        border: const Border(
+          top: BorderSide(color: AppColors.glassStroke),
+          bottom: BorderSide(color: AppColors.glassStroke),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, color: AppColors.secondary, size: 20),
+                  const SizedBox(width: 8),
+                  Text('Vrijeme odmora', style: AppTypography.label),
+                ],
+              ),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => _adjustRestTime(-15),
+                    child: Text('-15s', style: AppTypography.bodySm.copyWith(color: AppColors.primaryLight)),
+                  ),
+                  TextButton(
+                    onPressed: () => _adjustRestTime(15),
+                    child: Text('+15s', style: AppTypography.bodySm.copyWith(color: AppColors.primaryLight)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      backgroundColor: AppColors.glassFill,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    ),
+                    onPressed: _stopRestTimer,
+                    child: Text('Preskoči', style: AppTypography.bodySm.copyWith(color: AppColors.error)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    backgroundColor: AppColors.glassFill,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                    minHeight: 6,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                _formatDuration(_restSecondsRemaining),
+                style: AppTypography.labelLg.copyWith(
+                  color: AppColors.secondary,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
